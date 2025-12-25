@@ -1,4 +1,9 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -53,11 +58,19 @@ public partial class MainWindow : Window
     {
         var isRecording = WpfRecorder.IsRecording;
         var hasEntries = _entries.Count > 0;
+        var selectedCount = _entries.Count(e => e.IsSelectedForExport);
+        var hasSelectedEntries = selectedCount > 0;
 
         StartButton.IsEnabled = !isRecording;
         StopButton.IsEnabled = isRecording;
         SaveButton.IsEnabled = hasEntries;
         ClearButton.IsEnabled = hasEntries && !isRecording;
+
+        // Enable/disable export and selection buttons
+        SaveCsvButton.IsEnabled = hasSelectedEntries;
+        SaveExcelButton.IsEnabled = hasSelectedEntries;
+        SelectAllButton.IsEnabled = hasEntries;
+        DeselectAllButton.IsEnabled = hasEntries;
 
         if (isRecording)
         {
@@ -79,6 +92,13 @@ public partial class MainWindow : Window
         }
 
         EventCountText.Text = $" ({_entries.Count} events)";
+        SelectedCountText.Text = selectedCount.ToString();
+    }
+
+    private void UpdateSelectedCount()
+    {
+        var count = _entries.Count(e => e.IsSelectedForExport);
+        SelectedCountText.Text = count.ToString();
     }
 
     private void StartButton_Click(object sender, RoutedEventArgs e)
@@ -171,18 +191,413 @@ public partial class MainWindow : Window
             BodyTextBox.Text = string.Empty;
         }
     }
+
+    private void CheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateSelectedCount();
+        UpdateUI();
+    }
+
+    private void SelectAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var entry in _entries)
+        {
+            entry.IsSelectedForExport = true;
+        }
+        SelectAllCheckBox.IsChecked = true;
+        UpdateSelectedCount();
+        UpdateUI();
+    }
+
+    private void DeselectAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var entry in _entries)
+        {
+            entry.IsSelectedForExport = false;
+        }
+        SelectAllCheckBox.IsChecked = false;
+        UpdateSelectedCount();
+        UpdateUI();
+    }
+
+    private void SelectAllCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox)
+        {
+            var isChecked = checkBox.IsChecked ?? false;
+            foreach (var entry in _entries)
+            {
+                entry.IsSelectedForExport = isChecked;
+            }
+            UpdateSelectedCount();
+            UpdateUI();
+        }
+    }
+
+    private void LoadButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+            DefaultExt = ".json",
+            Title = "Load Recording"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                var json = File.ReadAllText(dialog.FileName);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                List<RecordEntry>? entries = null;
+
+                // Try to parse as RecordingSession first (the format SaveButton uses)
+                try
+                {
+                    var session = JsonSerializer.Deserialize<RecordingSession>(json, options);
+                    if (session?.Entries != null && session.Entries.Count > 0)
+                    {
+                        entries = session.Entries;
+                    }
+                }
+                catch
+                {
+                    // If that fails, try as simple List<RecordEntry>
+                }
+
+                // If session parsing didn't work, try as plain list
+                if (entries == null)
+                {
+                    entries = JsonSerializer.Deserialize<List<RecordEntry>>(json, options);
+                }
+
+                if (entries != null && entries.Count > 0)
+                {
+                    // Ask if user wants to append or replace
+                    MessageBoxResult result = MessageBoxResult.Yes;
+                    if (_entries.Count > 0)
+                    {
+                        result = MessageBox.Show(
+                            $"Found {entries.Count} entries in the file.\n\nDo you want to replace existing entries?\n\nYes = Replace existing\nNo = Append to existing\nCancel = Cancel load",
+                            "Load Recording",
+                            MessageBoxButton.YesNoCancel,
+                            MessageBoxImage.Question);
+
+                        if (result == MessageBoxResult.Cancel)
+                            return;
+                    }
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        _entries.Clear();
+                        WpfRecorder.Clear();
+                    }
+
+                    foreach (var entry in entries)
+                    {
+                        _entries.Add(new RecordEntryViewModel(entry));
+                    }
+
+                    // Update header checkbox state
+                    SelectAllCheckBox.IsChecked = _entries.All(x => x.IsSelectedForExport);
+
+                    UpdateSelectedCount();
+                    UpdateUI();
+
+                    MessageBox.Show($"Loaded {entries.Count} entries from {dialog.FileName}",
+                                    "Load Successful",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("No entries found in the file.",
+                                    "Load Recording",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading recording: {ex.Message}",
+                                "Load Error",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void SaveCsvButton_Click(object sender, RoutedEventArgs e)
+    {
+        var selectedEntries = _entries.Where(e => e.IsSelectedForExport).Select(e => e.Entry).ToList();
+        if (selectedEntries.Count == 0)
+        {
+            MessageBox.Show("No entries selected for export.",
+                            "Export",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
+            DefaultExt = ".csv",
+            FileName = $"recording_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+            Title = "Export to CSV"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                ExportToCsv(selectedEntries, dialog.FileName);
+                MessageBox.Show($"Exported {selectedEntries.Count} entries to {dialog.FileName}",
+                                "Export Successful",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error exporting to CSV: {ex.Message}",
+                                "Export Error",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private void SaveExcelButton_Click(object sender, RoutedEventArgs e)
+    {
+        var selectedEntries = _entries.Where(e => e.IsSelectedForExport).Select(e => e.Entry).ToList();
+        if (selectedEntries.Count == 0)
+        {
+            MessageBox.Show("No entries selected for export.",
+                            "Export",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Filter = "Excel XML Files (*.xml)|*.xml|All Files (*.*)|*.*",
+            DefaultExt = ".xml",
+            FileName = $"recording_{DateTime.Now:yyyyMMdd_HHmmss}.xml",
+            Title = "Export to Excel"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                ExportToExcel(selectedEntries, dialog.FileName);
+                MessageBox.Show($"Exported {selectedEntries.Count} entries to {dialog.FileName}\n\nNote: Open with Microsoft Excel to view the spreadsheet.",
+                                "Export Successful",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error exporting to Excel: {ex.Message}",
+                                "Export Error",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private static void ExportToCsv(IEnumerable<RecordEntry> entries, string filePath)
+    {
+        var sb = new StringBuilder();
+
+        // Header row
+        sb.AppendLine("Timestamp,Type,ControlType,ControlName,AutomationId,Text,ContentText,OldValue,NewValue,WindowTitle,VisualTreePath,ScreenX,ScreenY,KeyCombination,Properties,Method,URL,StatusCode,Duration,CorrelationId");
+
+        foreach (var entry in entries)
+        {
+            var timestamp = entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            var type = entry.EntryType.ToString();
+            var controlType = EscapeCsv(entry.UIInfo?.ControlType ?? "");
+            var controlName = EscapeCsv(entry.UIInfo?.ControlName ?? "");
+            var automationId = EscapeCsv(entry.UIInfo?.AutomationId ?? "");
+            var text = EscapeCsv(entry.UIInfo?.Text ?? "");
+            var contentText = EscapeCsv(entry.UIInfo?.ContentText ?? "");
+            var oldValue = EscapeCsv(entry.UIInfo?.OldValue ?? "");
+            var newValue = EscapeCsv(entry.UIInfo?.NewValue ?? "");
+            var windowTitle = EscapeCsv(entry.UIInfo?.WindowTitle ?? "");
+            var visualTreePath = EscapeCsv(entry.UIInfo?.VisualTreePath ?? "");
+            var screenX = entry.UIInfo?.ScreenPosition?.X.ToString() ?? "";
+            var screenY = entry.UIInfo?.ScreenPosition?.Y.ToString() ?? "";
+            var keyCombination = EscapeCsv(entry.UIInfo?.KeyCombination ?? "");
+            var properties = EscapeCsv(FormatProperties(entry.UIInfo?.Properties));
+            var method = EscapeCsv(entry.ApiInfo?.Method ?? "");
+            var url = EscapeCsv(entry.ApiInfo?.Url ?? "");
+            var statusCode = entry.ApiInfo?.StatusCode?.ToString() ?? "";
+            var duration = entry.DurationMs?.ToString() ?? "";
+            var correlationId = EscapeCsv(entry.CorrelationId ?? "");
+
+            sb.AppendLine($"{timestamp},{type},{controlType},{controlName},{automationId},{text},{contentText},{oldValue},{newValue},{windowTitle},{visualTreePath},{screenX},{screenY},{keyCombination},{properties},{method},{url},{statusCode},{duration},{correlationId}");
+        }
+
+        File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+    }
+
+    private static string FormatProperties(Dictionary<string, string>? properties)
+    {
+        if (properties == null || properties.Count == 0)
+            return "";
+
+        return string.Join("; ", properties.Select(p => $"{p.Key}={p.Value}"));
+    }
+
+    private static void ExportToExcel(IEnumerable<RecordEntry> entries, string filePath)
+    {
+        var entryList = entries.ToList();
+        var sb = new StringBuilder();
+
+        // Excel XML header
+        sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        sb.AppendLine("<?mso-application progid=\"Excel.Sheet\"?>");
+        sb.AppendLine("<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\"");
+        sb.AppendLine("          xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">");
+
+        // Styles
+        sb.AppendLine("  <Styles>");
+        sb.AppendLine("    <Style ss:ID=\"Header\">");
+        sb.AppendLine("      <Font ss:Bold=\"1\"/>");
+        sb.AppendLine("      <Interior ss:Color=\"#CCCCCC\" ss:Pattern=\"Solid\"/>");
+        sb.AppendLine("    </Style>");
+        sb.AppendLine("  </Styles>");
+
+        // Worksheet
+        sb.AppendLine("  <Worksheet ss:Name=\"Recorded Events\">");
+        sb.AppendLine($"    <Table ss:ExpandedColumnCount=\"20\" ss:ExpandedRowCount=\"{entryList.Count + 1}\">");
+
+        // Header row
+        sb.AppendLine("      <Row>");
+        WriteExcelCell(sb, "Timestamp", "Header");
+        WriteExcelCell(sb, "Type", "Header");
+        WriteExcelCell(sb, "ControlType", "Header");
+        WriteExcelCell(sb, "ControlName", "Header");
+        WriteExcelCell(sb, "AutomationId", "Header");
+        WriteExcelCell(sb, "Text", "Header");
+        WriteExcelCell(sb, "ContentText", "Header");
+        WriteExcelCell(sb, "OldValue", "Header");
+        WriteExcelCell(sb, "NewValue", "Header");
+        WriteExcelCell(sb, "WindowTitle", "Header");
+        WriteExcelCell(sb, "VisualTreePath", "Header");
+        WriteExcelCell(sb, "ScreenX", "Header");
+        WriteExcelCell(sb, "ScreenY", "Header");
+        WriteExcelCell(sb, "KeyCombination", "Header");
+        WriteExcelCell(sb, "Properties", "Header");
+        WriteExcelCell(sb, "Method", "Header");
+        WriteExcelCell(sb, "URL", "Header");
+        WriteExcelCell(sb, "StatusCode", "Header");
+        WriteExcelCell(sb, "Duration", "Header");
+        WriteExcelCell(sb, "CorrelationId", "Header");
+        sb.AppendLine("      </Row>");
+
+        // Data rows
+        foreach (var entry in entryList)
+        {
+            sb.AppendLine("      <Row>");
+            WriteExcelCell(sb, entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+            WriteExcelCell(sb, entry.EntryType.ToString());
+            WriteExcelCell(sb, entry.UIInfo?.ControlType ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.ControlName ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.AutomationId ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.Text ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.ContentText ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.OldValue ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.NewValue ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.WindowTitle ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.VisualTreePath ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.ScreenPosition?.X.ToString() ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.ScreenPosition?.Y.ToString() ?? "");
+            WriteExcelCell(sb, entry.UIInfo?.KeyCombination ?? "");
+            WriteExcelCell(sb, FormatProperties(entry.UIInfo?.Properties));
+            WriteExcelCell(sb, entry.ApiInfo?.Method ?? "");
+            WriteExcelCell(sb, entry.ApiInfo?.Url ?? "");
+            WriteExcelCell(sb, entry.ApiInfo?.StatusCode?.ToString() ?? "");
+            WriteExcelCell(sb, entry.DurationMs?.ToString() ?? "");
+            WriteExcelCell(sb, entry.CorrelationId ?? "");
+            sb.AppendLine("      </Row>");
+        }
+
+        sb.AppendLine("    </Table>");
+        sb.AppendLine("  </Worksheet>");
+        sb.AppendLine("</Workbook>");
+
+        File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+    }
+
+    private static void WriteExcelCell(StringBuilder sb, string value, string? style = null)
+    {
+        var escapedValue = EscapeXml(value);
+        var styleAttr = style != null ? $" ss:StyleID=\"{style}\"" : "";
+        sb.AppendLine($"        <Cell{styleAttr}><Data ss:Type=\"String\">{escapedValue}</Data></Cell>");
+    }
+
+    private static string EscapeCsv(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return "";
+
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
+        {
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        }
+
+        return value;
+    }
+
+    private static string EscapeXml(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return "";
+
+        return value
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&apos;");
+    }
 }
 
 /// <summary>
 /// View model for displaying RecordEntry in the list
 /// </summary>
-public class RecordEntryViewModel
+public class RecordEntryViewModel : INotifyPropertyChanged
 {
+    private bool _isSelectedForExport = true;
+
     public RecordEntry Entry { get; }
 
     public RecordEntryViewModel(RecordEntry entry)
     {
         Entry = entry;
+    }
+
+    /// <summary>
+    /// Whether this entry is selected for export
+    /// </summary>
+    public bool IsSelectedForExport
+    {
+        get => _isSelectedForExport;
+        set
+        {
+            if (_isSelectedForExport != value)
+            {
+                _isSelectedForExport = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     public string TimeString => Entry.Timestamp.ToLocalTime().ToString("HH:mm:ss.fff");
@@ -258,4 +673,11 @@ public class RecordEntryViewModel
 
     public string? RequestBody => Entry.ApiInfo?.RequestBody;
     public string? ResponseBody => Entry.ApiInfo?.ResponseBody;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }

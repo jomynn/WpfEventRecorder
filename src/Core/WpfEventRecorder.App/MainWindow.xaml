@@ -31,7 +31,26 @@
                             Click="ClearButton_Click" Margin="0,0,8,0"/>
                     <Button x:Name="SaveButton" Content="💾 Save"
                             Style="{StaticResource PrimaryButton}"
-                            Click="SaveButton_Click"/>
+                            Click="SaveButton_Click" Margin="0,0,8,0"/>
+                    <Button x:Name="LoadButton" Content="📂 Load"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="LoadButton_Click" Margin="0,0,8,0"/>
+                    <Separator Margin="8,0"/>
+                    <Button x:Name="SaveCsvButton" Content="CSV"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="SaveCsvButton_Click" Margin="0,0,8,0" IsEnabled="False"/>
+                    <Button x:Name="SaveExcelButton" Content="Excel"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="SaveExcelButton_Click" Margin="0,0,8,0" IsEnabled="False"/>
+                    <Separator Margin="8,0"/>
+                    <TextBlock Text="Selected:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <TextBlock x:Name="SelectedCountText" Text="0" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <Button x:Name="SelectAllButton" Content="All"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="SelectAllButton_Click" Margin="0,0,4,0" IsEnabled="False" Padding="8,4"/>
+                    <Button x:Name="DeselectAllButton" Content="None"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="DeselectAllButton_Click" IsEnabled="False" Padding="8,4"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
@@ -70,6 +89,22 @@
                     <ListView x:Name="EventsList" Grid.Row="1" SelectionChanged="EventsList_SelectionChanged">
                         <ListView.View>
                             <GridView>
+                                <GridViewColumn Width="30">
+                                    <GridViewColumn.Header>
+                                        <CheckBox x:Name="SelectAllCheckBox"
+                                                  Click="SelectAllCheckBox_Click"
+                                                  ToolTip="Select/Deselect All"
+                                                  IsChecked="True"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelectedForExport, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      Click="CheckBox_Click"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="Time" Width="80" DisplayMemberBinding="{Binding TimeString}"/>
                                 <GridViewColumn Header="Type" Width="120" DisplayMemberBinding="{Binding TypeString}"/>
                                 <GridViewColumn Header="Details" Width="300" DisplayMemberBinding="{Binding Summary}"/>
