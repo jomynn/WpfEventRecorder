@@ -6,10 +6,12 @@ using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 using Microsoft.Win32;
 using WpfEventRecorder.Core;
 using WpfEventRecorder.Core.Models;
+using WpfEventRecorder.Core.Services;
 
 namespace WpfEventRecorder.App;
 
@@ -19,6 +21,8 @@ namespace WpfEventRecorder.App;
 public partial class MainWindow : Window
 {
     private readonly ObservableCollection<RecordEntryViewModel> _entries = new();
+    private readonly ObservableCollection<VisualTreeNode> _visualTreeRoot = new();
+    private readonly ObservableCollection<PropertyItem> _selectedNodeProperties = new();
     private WindowInfo? _selectedWindow;
 
     public MainWindow()
@@ -26,6 +30,12 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         EventsList.ItemsSource = _entries;
+        VisualTreeView.ItemsSource = _visualTreeRoot;
+
+        // Setup property list with grouping
+        var propertyView = CollectionViewSource.GetDefaultView(_selectedNodeProperties);
+        propertyView.GroupDescriptions.Add(new PropertyGroupDescription("Category"));
+        PropertyList.ItemsSource = propertyView;
 
         // Subscribe to recording events
         WpfRecorder.RecordingStateChanged += OnRecordingStateChanged;
@@ -122,8 +132,8 @@ public partial class MainWindow : Window
     private void StopButton_Click(object sender, RoutedEventArgs e)
     {
         WpfRecorder.Stop();
-        _selectedWindow = null;
-        TargetWindowBorder.Visibility = Visibility.Collapsed;
+        // Keep _selectedWindow for Visual Tree browsing after recording stops
+        // Only hide the indicator but keep the window reference
         UpdateUI();
     }
 
@@ -141,6 +151,16 @@ public partial class MainWindow : Window
             _entries.Clear();
             DetailsTextBox.Text = string.Empty;
             BodyTextBox.Text = string.Empty;
+
+            // Clear visual tree and properties
+            _visualTreeRoot.Clear();
+            _selectedNodeProperties.Clear();
+            PropertyHeader.Text = "Select an element from Visual Tree";
+
+            // Clear selected window
+            _selectedWindow = null;
+            TargetWindowBorder.Visibility = Visibility.Collapsed;
+
             UpdateUI();
         }
     }
@@ -568,6 +588,96 @@ public partial class MainWindow : Window
             .Replace("\"", "&quot;")
             .Replace("'", "&apos;");
     }
+
+    #region Visual Tree Tab
+
+    private void RefreshTree_Click(object sender, RoutedEventArgs e)
+    {
+        _visualTreeRoot.Clear();
+        _selectedNodeProperties.Clear();
+        PropertyHeader.Text = "Select an element from Visual Tree";
+
+        if (_selectedWindow == null || _selectedWindow.Handle == IntPtr.Zero)
+        {
+            MessageBox.Show("No target window selected. Start recording first to select a window.",
+                            "Visual Tree",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            var rootNode = LiveTreeService.BuildVisualTree(_selectedWindow.Handle);
+            if (rootNode != null)
+            {
+                _visualTreeRoot.Add(rootNode);
+                StatusBarText.Text = $"Visual tree refreshed - {CountNodes(rootNode)} elements found";
+            }
+            else
+            {
+                MessageBox.Show("Could not build visual tree. The target window may have been closed.",
+                                "Visual Tree",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error building visual tree: {ex.Message}",
+                            "Visual Tree Error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+        }
+    }
+
+    private static int CountNodes(VisualTreeNode node)
+    {
+        int count = 1;
+        foreach (var child in node.Children)
+        {
+            count += CountNodes(child);
+        }
+        return count;
+    }
+
+    private void ExpandAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var node in _visualTreeRoot)
+        {
+            node.ExpandAll();
+        }
+    }
+
+    private void CollapseAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var node in _visualTreeRoot)
+        {
+            node.CollapseAll();
+        }
+    }
+
+    private void VisualTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        _selectedNodeProperties.Clear();
+
+        if (e.NewValue is VisualTreeNode selectedNode)
+        {
+            PropertyHeader.Text = $"{selectedNode.ControlType} {selectedNode.DisplayText}";
+
+            var properties = LiveTreeService.GetElementProperties(selectedNode);
+            foreach (var prop in properties)
+            {
+                _selectedNodeProperties.Add(prop);
+            }
+        }
+        else
+        {
+            PropertyHeader.Text = "Select an element from Visual Tree";
+        }
+    }
+
+    #endregion
 }
 
 /// <summary>
