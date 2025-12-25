@@ -11,10 +11,27 @@ namespace WpfEventRecorder.ToolWindows
     public class RecordEntryViewModel : INotifyPropertyChanged
     {
         private readonly RecordEntry _entry;
+        private bool _isSelectedForExport = true;
 
         public RecordEntryViewModel(RecordEntry entry)
         {
             _entry = entry ?? throw new ArgumentNullException(nameof(entry));
+        }
+
+        /// <summary>
+        /// Whether this entry is selected for export
+        /// </summary>
+        public bool IsSelectedForExport
+        {
+            get => _isSelectedForExport;
+            set
+            {
+                if (_isSelectedForExport != value)
+                {
+                    _isSelectedForExport = value;
+                    OnPropertyChanged();
+                }
+            }
         }
 
         /// <summary>

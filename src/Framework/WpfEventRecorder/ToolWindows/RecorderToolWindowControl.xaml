@@ -57,7 +57,17 @@
                         Style="{StaticResource ToolbarButtonStyle}"
                         Click="SaveButton_Click"
                         IsEnabled="False"
-                        ToolTip="Save recording to file (Ctrl+Alt+E)"/>
+                        ToolTip="Save recording to JSON file (Ctrl+Alt+E)"/>
+                <Button x:Name="SaveCsvButton" Content="CSV"
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        Click="SaveCsvButton_Click"
+                        IsEnabled="False"
+                        ToolTip="Export selected events to CSV file"/>
+                <Button x:Name="SaveExcelButton" Content="Excel"
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        Click="SaveExcelButton_Click"
+                        IsEnabled="False"
+                        ToolTip="Export selected events to Excel file"/>
                 <Button x:Name="ClearButton" Content="Clear"
                         Style="{StaticResource ToolbarButtonStyle}"
                         Click="ClearButton_Click"
@@ -81,6 +91,25 @@
                 <TextBlock x:Name="EventCountText" Text="0"
                            VerticalAlignment="Center"
                            FontWeight="Bold"/>
+
+                <Separator Margin="10,0"/>
+
+                <TextBlock Text="Selected:" VerticalAlignment="Center" Margin="5,0"/>
+                <TextBlock x:Name="SelectedCountText" Text="0"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"/>
+                <Button x:Name="SelectAllButton" Content="All"
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        Click="SelectAllButton_Click"
+                        IsEnabled="False"
+                        ToolTip="Select all events"
+                        MinWidth="40"/>
+                <Button x:Name="DeselectAllButton" Content="None"
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        Click="DeselectAllButton_Click"
+                        IsEnabled="False"
+                        ToolTip="Deselect all events"
+                        MinWidth="40"/>
             </StackPanel>
         </Border>
 
@@ -90,11 +119,21 @@
                   BorderThickness="0">
             <ListView.View>
                 <GridView>
+                    <GridViewColumn Width="30">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelectedForExport, Mode=TwoWay}"
+                                          Click="CheckBox_Click"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Center"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                     <GridViewColumn Header="Time" Width="80"
                                     DisplayMemberBinding="{Binding TimestampFormatted}"/>
                     <GridViewColumn Header="Type" Width="70"
                                     DisplayMemberBinding="{Binding TypeIcon}"/>
-                    <GridViewColumn Header="Summary" Width="350"
+                    <GridViewColumn Header="Summary" Width="320"
                                     DisplayMemberBinding="{Binding Summary}"/>
                     <GridViewColumn Header="Duration" Width="70"
                                     DisplayMemberBinding="{Binding DurationMs, StringFormat={}{0}ms}"/>

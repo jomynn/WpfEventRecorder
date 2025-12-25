@@ -1,11 +1,13 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Win32;
 using WpfEventRecorder.Core.Models;
 using WpfEventRecorder.Core.Services;
+using WpfEventRecorder.Services;
 
 namespace WpfEventRecorder.ToolWindows
 {
@@ -44,6 +46,8 @@ namespace WpfEventRecorder.ToolWindows
             {
                 _entries.Add(new RecordEntryViewModel(entry));
                 EventCountText.Text = _entries.Count.ToString();
+                UpdateSelectedCount();
+                UpdateUI();
 
                 // Auto-scroll to latest entry
                 if (_entries.Count > 0)
@@ -57,11 +61,19 @@ namespace WpfEventRecorder.ToolWindows
         {
             var isRecording = RecordingHub.Instance.IsRecording;
             var hasEntries = _entries.Count > 0;
+            var selectedCount = _entries.Count(e => e.IsSelectedForExport);
+            var hasSelectedEntries = selectedCount > 0;
 
             StartButton.IsEnabled = !isRecording;
             StopButton.IsEnabled = isRecording;
             SaveButton.IsEnabled = hasEntries;
             ClearButton.IsEnabled = hasEntries && !isRecording;
+
+            // Enable/disable export and selection buttons
+            SaveCsvButton.IsEnabled = hasSelectedEntries;
+            SaveExcelButton.IsEnabled = hasSelectedEntries;
+            SelectAllButton.IsEnabled = hasEntries;
+            DeselectAllButton.IsEnabled = hasEntries;
 
             if (isRecording)
             {
@@ -164,6 +176,118 @@ namespace WpfEventRecorder.ToolWindows
             {
                 DetailsTextBox.Text = string.Empty;
                 BodyTextBox.Text = string.Empty;
+            }
+        }
+
+        private void UpdateSelectedCount()
+        {
+            var count = _entries.Count(e => e.IsSelectedForExport);
+            SelectedCountText.Text = count.ToString();
+        }
+
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateSelectedCount();
+            UpdateUI();
+        }
+
+        private void SelectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var entry in _entries)
+            {
+                entry.IsSelectedForExport = true;
+            }
+            UpdateSelectedCount();
+            UpdateUI();
+        }
+
+        private void DeselectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var entry in _entries)
+            {
+                entry.IsSelectedForExport = false;
+            }
+            UpdateSelectedCount();
+            UpdateUI();
+        }
+
+        private void SaveCsvButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedEntries = _entries.Where(e => e.IsSelectedForExport).Select(e => e.Entry).ToList();
+            if (selectedEntries.Count == 0)
+            {
+                MessageBox.Show("No entries selected for export.",
+                                "Export",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new SaveFileDialog
+            {
+                Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
+                DefaultExt = ".csv",
+                FileName = $"recording_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                Title = "Export to CSV"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    ExportService.ExportToCsv(selectedEntries, dialog.FileName);
+                    MessageBox.Show($"Exported {selectedEntries.Count} entries to {dialog.FileName}",
+                                    "Export Successful",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error exporting to CSV: {ex.Message}",
+                                    "Export Error",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void SaveExcelButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedEntries = _entries.Where(e => e.IsSelectedForExport).Select(e => e.Entry).ToList();
+            if (selectedEntries.Count == 0)
+            {
+                MessageBox.Show("No entries selected for export.",
+                                "Export",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new SaveFileDialog
+            {
+                Filter = "Excel XML Files (*.xml)|*.xml|All Files (*.*)|*.*",
+                DefaultExt = ".xml",
+                FileName = $"recording_{DateTime.Now:yyyyMMdd_HHmmss}.xml",
+                Title = "Export to Excel"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    ExportService.ExportToExcel(selectedEntries, dialog.FileName);
+                    MessageBox.Show($"Exported {selectedEntries.Count} entries to {dialog.FileName}\n\nNote: Open with Microsoft Excel to view the spreadsheet.",
+                                    "Export Successful",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error exporting to Excel: {ex.Message}",
+                                    "Export Error",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
+                }
             }
         }
     }
