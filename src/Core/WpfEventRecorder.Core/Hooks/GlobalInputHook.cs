@@ -371,6 +371,29 @@ public class GlobalInputHook : IDisposable
             var element = AutomationElement.FromPoint(new System.Windows.Point(point.X, point.Y));
             if (element != null)
             {
+                // Check if we got a Window element - this often means we hit an overlay or the click
+                // point is on the window chrome. Try to find a more specific child element.
+                if (element.Current.ControlType == ControlType.Window)
+                {
+                    var betterElement = FindClickableChildAtPoint(element, point);
+                    if (betterElement != null)
+                    {
+                        element = betterElement;
+                    }
+                }
+
+                // Check if this looks like a notification badge or overlay (short numeric text like "99+")
+                // and try to find the actual control underneath
+                var elementName = element.Current.Name;
+                if (IsLikelyNotificationBadge(elementName) || IsLikelyOverlay(element))
+                {
+                    var parentControl = FindParentControl(element);
+                    if (parentControl != null)
+                    {
+                        element = parentControl;
+                    }
+                }
+
                 // Basic properties
                 info.ControlType = element.Current.ControlType.ProgrammaticName.Replace("ControlType.", "");
                 info.ControlName = element.Current.Name;
@@ -676,6 +699,224 @@ public class GlobalInputHook : IDisposable
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Checks if a text value looks like a notification badge (e.g., "99+", "5", "NEW")
+    /// </summary>
+    private bool IsLikelyNotificationBadge(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return false;
+
+        // Common notification badge patterns
+        var trimmed = text.Trim();
+
+        // Numeric badges like "99+", "5", "123"
+        if (System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^\d+\+?$"))
+            return true;
+
+        // Common badge text
+        var badgeTexts = new[] { "NEW", "HOT", "SALE", "!", "..." };
+        if (badgeTexts.Contains(trimmed.ToUpperInvariant()))
+            return true;
+
+        // Very short text that's likely a badge (1-4 chars)
+        if (trimmed.Length <= 4 && !trimmed.Contains(" "))
+        {
+            // But not if it's a meaningful button text
+            var meaningfulShortTexts = new[] { "OK", "NO", "YES", "ADD", "EDIT", "SAVE", "OPEN", "HELP", "EXIT", "STOP", "PLAY", "NEXT", "BACK", "SEND", "COPY", "CUT" };
+            if (!meaningfulShortTexts.Contains(trimmed.ToUpperInvariant()))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if an element appears to be an overlay (popup, tooltip, badge container)
+    /// </summary>
+    private bool IsLikelyOverlay(AutomationElement element)
+    {
+        try
+        {
+            var controlType = element.Current.ControlType;
+            var className = element.Current.ClassName ?? "";
+
+            // Tooltip and popup types
+            if (controlType == ControlType.ToolTip)
+                return true;
+
+            // Common overlay class names
+            var overlayClassNames = new[] { "Popup", "Badge", "Overlay", "Adorner", "Tooltip", "Notification" };
+            if (overlayClassNames.Any(n => className.IndexOf(n, StringComparison.OrdinalIgnoreCase) >= 0))
+                return true;
+
+            // Small elements with just text that overlay other controls
+            if (controlType == ControlType.Text)
+            {
+                var bounds = element.Current.BoundingRectangle;
+                // Very small text element (likely a badge)
+                if (bounds.Width < 50 && bounds.Height < 30)
+                {
+                    var name = element.Current.Name;
+                    if (IsLikelyNotificationBadge(name))
+                        return true;
+                }
+            }
+        }
+        catch
+        {
+            // Ignore
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Finds the parent control that contains the actual clickable content
+    /// </summary>
+    private AutomationElement? FindParentControl(AutomationElement element)
+    {
+        try
+        {
+            var walker = TreeWalker.ControlViewWalker;
+            var current = walker.GetParent(element);
+
+            while (current != null)
+            {
+                var controlType = current.Current.ControlType;
+
+                // Found a meaningful interactive control
+                if (controlType == ControlType.Button ||
+                    controlType == ControlType.Edit ||
+                    controlType == ControlType.ComboBox ||
+                    controlType == ControlType.ListItem ||
+                    controlType == ControlType.MenuItem ||
+                    controlType == ControlType.TabItem ||
+                    controlType == ControlType.TreeItem ||
+                    controlType == ControlType.CheckBox ||
+                    controlType == ControlType.RadioButton ||
+                    controlType == ControlType.Hyperlink ||
+                    controlType == ControlType.Slider ||
+                    controlType == ControlType.Spinner)
+                {
+                    return current;
+                }
+
+                // Stop at Window level
+                if (controlType == ControlType.Window)
+                    break;
+
+                current = walker.GetParent(current);
+            }
+        }
+        catch
+        {
+            // Ignore
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Finds a clickable child element at or near the specified point
+    /// </summary>
+    private AutomationElement? FindClickableChildAtPoint(AutomationElement window, POINT point)
+    {
+        try
+        {
+            var clickPoint = new System.Windows.Point(point.X, point.Y);
+            var walker = TreeWalker.ControlViewWalker;
+
+            // Try to find the deepest element that contains the point
+            AutomationElement? bestMatch = null;
+            double smallestArea = double.MaxValue;
+
+            // Use a recursive search through the visual tree
+            FindBestMatchingElement(window, clickPoint, walker, ref bestMatch, ref smallestArea);
+
+            // Return the best match if it's not the window itself
+            if (bestMatch != null && bestMatch.Current.ControlType != ControlType.Window)
+            {
+                return bestMatch;
+            }
+        }
+        catch
+        {
+            // Ignore
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Recursively finds the best matching element at a point
+    /// </summary>
+    private void FindBestMatchingElement(AutomationElement element, System.Windows.Point point,
+        TreeWalker walker, ref AutomationElement? bestMatch, ref double smallestArea)
+    {
+        try
+        {
+            var child = walker.GetFirstChild(element);
+
+            while (child != null)
+            {
+                try
+                {
+                    var bounds = child.Current.BoundingRectangle;
+
+                    // Check if point is within bounds
+                    if (!bounds.IsEmpty && bounds.Contains(point))
+                    {
+                        var controlType = child.Current.ControlType;
+
+                        // Skip overlays and decorators
+                        if (!IsLikelyOverlay(child))
+                        {
+                            var area = bounds.Width * bounds.Height;
+
+                            // Prefer interactive controls
+                            bool isInteractive = controlType == ControlType.Button ||
+                                                 controlType == ControlType.Edit ||
+                                                 controlType == ControlType.ComboBox ||
+                                                 controlType == ControlType.CheckBox ||
+                                                 controlType == ControlType.RadioButton ||
+                                                 controlType == ControlType.Hyperlink ||
+                                                 controlType == ControlType.ListItem ||
+                                                 controlType == ControlType.MenuItem ||
+                                                 controlType == ControlType.TabItem ||
+                                                 controlType == ControlType.TreeItem ||
+                                                 controlType == ControlType.Slider ||
+                                                 controlType == ControlType.Spinner ||
+                                                 controlType == ControlType.DataItem;
+
+                            // For interactive controls, give them priority with a smaller effective area
+                            var effectiveArea = isInteractive ? area * 0.5 : area;
+
+                            if (effectiveArea < smallestArea)
+                            {
+                                bestMatch = child;
+                                smallestArea = effectiveArea;
+                            }
+                        }
+
+                        // Recurse into children
+                        FindBestMatchingElement(child, point, walker, ref bestMatch, ref smallestArea);
+                    }
+                }
+                catch
+                {
+                    // Skip elements that throw exceptions
+                }
+
+                child = walker.GetNextSibling(child);
+            }
+        }
+        catch
+        {
+            // Ignore errors during traversal
+        }
     }
 
     public void Dispose()
