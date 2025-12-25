@@ -259,13 +259,22 @@ string ExportAsJson();
 
 ### Framework Solution (.NET Framework 4.7.2)
 - Visual Studio 2022 (17.0 or later)
-- .NET Framework 4.7.2 SDK
+- .NET SDK 6.0 or later (for building)
+- .NET Framework 4.7.2 Developer Pack
 - Windows 10/11
 
 ### Core Solution (.NET 8)
 - Visual Studio 2022 (17.8 or later) or VS Code
-- .NET 8 SDK
+- .NET SDK 8.0 or later
 - Windows 10/11
+
+### Troubleshooting SDK Issues
+
+If you encounter "Unable to resolve the .NET SDK version" error:
+
+1. Check installed SDKs: `dotnet --list-sdks`
+2. Install the required SDK from https://dotnet.microsoft.com/download
+3. The `global.json` uses `rollForward: "latestMajor"` for flexibility
 
 ## Building
 
