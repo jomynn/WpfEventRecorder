@@ -24,12 +24,12 @@ namespace WpfEventRecorder.Core.Services
         private readonly object _lock = new object();
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
-        private UIHook? _uiHook;
-        private RecordingHttpHandler? _httpHandler;
-        private RecordingSession? _currentSession;
+        private UIHook _uiHook;
+        private RecordingHttpHandler _httpHandler;
+        private RecordingSession _currentSession;
         private bool _isRecording;
         private bool _disposed;
-        private string? _currentCorrelationId;
+        private string _currentCorrelationId;
 
         /// <summary>
         /// Singleton instance of the recording hub
@@ -63,17 +63,17 @@ namespace WpfEventRecorder.Core.Services
         /// <summary>
         /// Current recording session
         /// </summary>
-        public RecordingSession? CurrentSession => _currentSession;
+        public RecordingSession CurrentSession => _currentSession;
 
         /// <summary>
         /// Event raised when recording state changes
         /// </summary>
-        public event EventHandler<bool>? RecordingStateChanged;
+        public event EventHandler<bool> RecordingStateChanged;
 
         /// <summary>
         /// Event raised when a new entry is recorded
         /// </summary>
-        public event EventHandler<RecordEntry>? EntryRecorded;
+        public event EventHandler<RecordEntry> EntryRecorded;
 
         private RecordingHub()
         {
@@ -120,7 +120,7 @@ namespace WpfEventRecorder.Core.Services
         /// Starts a new recording session
         /// </summary>
         /// <param name="sessionName">Optional session name</param>
-        public void Start(string? sessionName = null)
+        public void Start(string sessionName = null)
         {
             if (_isRecording) return;
 
@@ -133,6 +133,34 @@ namespace WpfEventRecorder.Core.Services
             }
 
             _uiHook?.Start();
+            if (_httpHandler != null)
+            {
+                _httpHandler.IsActive = true;
+            }
+
+            RecordingStateChanged?.Invoke(this, true);
+        }
+
+        /// <summary>
+        /// Starts a new recording session for a specific target window
+        /// </summary>
+        /// <param name="targetWindow">The window to monitor</param>
+        /// <param name="sessionName">Optional session name</param>
+        public void Start(WindowInfo targetWindow, string sessionName = null)
+        {
+            if (_isRecording) return;
+            if (targetWindow == null) throw new ArgumentNullException(nameof(targetWindow));
+
+            lock (_lock)
+            {
+                _entries.Clear();
+                _currentSession = RecordingSession.Create(sessionName ?? $"Session_{DateTime.Now:yyyyMMdd_HHmmss}");
+                _currentSession.TargetWindow = targetWindow;
+                _isRecording = true;
+                _currentCorrelationId = Guid.NewGuid().ToString();
+            }
+
+            _uiHook?.Start(targetWindow);
             if (_httpHandler != null)
             {
                 _httpHandler.IsActive = true;

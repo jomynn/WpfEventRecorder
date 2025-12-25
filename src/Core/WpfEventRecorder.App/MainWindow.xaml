@@ -35,6 +35,13 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="#E8F4FD" CornerRadius="4" Padding="8,4" Margin="0,0,16,0"
+                            x:Name="TargetWindowBorder" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Target: " Foreground="#0078D4" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="TargetWindowText" Text="" Foreground="#0078D4" MaxWidth="200" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
                     <Ellipse x:Name="StatusIndicator" Width="12" Height="12" Fill="Gray" Margin="0,0,8,0"/>
                     <TextBlock x:Name="StatusText" Text="Ready" FontWeight="SemiBold"/>
                     <TextBlock x:Name="EventCountText" Text=" (0 events)" Foreground="Gray" Margin="8,0,0,0"/>

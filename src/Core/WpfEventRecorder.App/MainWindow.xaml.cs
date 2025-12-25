@@ -14,6 +14,7 @@ namespace WpfEventRecorder.App;
 public partial class MainWindow : Window
 {
     private readonly ObservableCollection<RecordEntryViewModel> _entries = new();
+    private WindowInfo? _selectedWindow;
 
     public MainWindow()
     {
@@ -82,13 +83,27 @@ public partial class MainWindow : Window
 
     private void StartButton_Click(object sender, RoutedEventArgs e)
     {
-        WpfRecorder.Start($"Session_{DateTime.Now:yyyyMMdd_HHmmss}");
-        UpdateUI();
+        // Show window selector dialog
+        var dialog = new WindowSelectorDialog { Owner = this };
+        if (dialog.ShowDialog() == true && dialog.SelectedWindow != null)
+        {
+            _selectedWindow = dialog.SelectedWindow;
+
+            // Update target window indicator
+            TargetWindowText.Text = _selectedWindow.DisplayName;
+            TargetWindowBorder.Visibility = Visibility.Visible;
+
+            // Start recording with target window info
+            WpfRecorder.Start(_selectedWindow, $"Session_{DateTime.Now:yyyyMMdd_HHmmss}");
+            UpdateUI();
+        }
     }
 
     private void StopButton_Click(object sender, RoutedEventArgs e)
     {
         WpfRecorder.Stop();
+        _selectedWindow = null;
+        TargetWindowBorder.Visibility = Visibility.Collapsed;
         UpdateUI();
     }
 

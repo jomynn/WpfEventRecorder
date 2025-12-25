@@ -11,7 +11,7 @@ namespace WpfEventRecorder.Core
     /// </summary>
     public static class WpfRecorder
     {
-        private static UIHook? _uiHook;
+        private static UIHook _uiHook;
         private static bool _initialized;
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace WpfEventRecorder.Core
         /// <summary>
         /// Event raised when recording state changes
         /// </summary>
-        public static event EventHandler<bool>? RecordingStateChanged
+        public static event EventHandler<bool> RecordingStateChanged
         {
             add => Hub.RecordingStateChanged += value;
             remove => Hub.RecordingStateChanged -= value;
@@ -41,7 +41,7 @@ namespace WpfEventRecorder.Core
         /// <summary>
         /// Event raised when a new entry is recorded
         /// </summary>
-        public static event EventHandler<RecordEntry>? EntryRecorded
+        public static event EventHandler<RecordEntry> EntryRecorded
         {
             add => Hub.EntryRecorded += value;
             remove => Hub.EntryRecorded -= value;
@@ -72,7 +72,7 @@ namespace WpfEventRecorder.Core
         /// <summary>
         /// Gets a recording HTTP handler for custom HttpClient configuration
         /// </summary>
-        public static RecordingHttpHandler CreateHttpHandler(HttpMessageHandler? innerHandler = null)
+        public static RecordingHttpHandler CreateHttpHandler(HttpMessageHandler innerHandler = null)
         {
             var handler = new RecordingHttpHandler(innerHandler);
             Hub.SetHttpHandler(handler);
@@ -83,10 +83,21 @@ namespace WpfEventRecorder.Core
         /// Starts recording
         /// </summary>
         /// <param name="sessionName">Optional session name</param>
-        public static void Start(string? sessionName = null)
+        public static void Start(string sessionName = null)
         {
             Initialize();
             Hub.Start(sessionName);
+        }
+
+        /// <summary>
+        /// Starts recording for a specific target window
+        /// </summary>
+        /// <param name="targetWindow">The window to monitor</param>
+        /// <param name="sessionName">Optional session name</param>
+        public static void Start(WindowInfo targetWindow, string sessionName = null)
+        {
+            Initialize();
+            Hub.Start(targetWindow, sessionName);
         }
 
         /// <summary>
@@ -124,7 +135,7 @@ namespace WpfEventRecorder.Core
         /// <summary>
         /// Records a custom event
         /// </summary>
-        public static void RecordCustomEvent(string eventType, string? data = null)
+        public static void RecordCustomEvent(string eventType, string data = null)
         {
             var entry = new RecordEntry
             {
@@ -138,7 +149,7 @@ namespace WpfEventRecorder.Core
         /// <summary>
         /// Records a UI click event manually
         /// </summary>
-        public static void RecordClick(string controlType, string? controlName, string? text = null)
+        public static void RecordClick(string controlType, string controlName, string text = null)
         {
             _uiHook?.RecordClick(controlType, controlName, null, text, null);
         }
@@ -146,7 +157,7 @@ namespace WpfEventRecorder.Core
         /// <summary>
         /// Records a text input event manually
         /// </summary>
-        public static void RecordTextInput(string controlType, string? controlName, string? oldValue, string? newValue)
+        public static void RecordTextInput(string controlType, string controlName, string oldValue, string newValue)
         {
             _uiHook?.RecordTextInput(controlType, controlName, null, oldValue, newValue, null);
         }

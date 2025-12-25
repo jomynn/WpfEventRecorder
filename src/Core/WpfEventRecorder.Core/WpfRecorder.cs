@@ -90,6 +90,17 @@ namespace WpfEventRecorder.Core
         }
 
         /// <summary>
+        /// Starts recording for a specific target window
+        /// </summary>
+        /// <param name="targetWindow">The window to monitor</param>
+        /// <param name="sessionName">Optional session name</param>
+        public static void Start(WindowInfo targetWindow, string? sessionName = null)
+        {
+            Initialize();
+            Hub.Start(targetWindow, sessionName);
+        }
+
+        /// <summary>
         /// Stops recording
         /// </summary>
         public static void Stop()

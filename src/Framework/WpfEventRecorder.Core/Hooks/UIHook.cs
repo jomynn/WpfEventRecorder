@@ -15,6 +15,7 @@ namespace WpfEventRecorder.Core.Hooks
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private bool _isActive;
         private bool _disposed;
+        private WindowInfo _targetWindow;
 
         /// <summary>
         /// Observable stream of UI events
@@ -27,11 +28,28 @@ namespace WpfEventRecorder.Core.Hooks
         public bool IsActive => _isActive;
 
         /// <summary>
+        /// The target window being monitored
+        /// </summary>
+        public WindowInfo TargetWindow => _targetWindow;
+
+        /// <summary>
         /// Starts capturing UI events
         /// </summary>
         public void Start()
         {
             if (_isActive) return;
+            _isActive = true;
+            AttachHooks();
+        }
+
+        /// <summary>
+        /// Starts capturing UI events for a specific target window
+        /// </summary>
+        /// <param name="targetWindow">The window to monitor</param>
+        public void Start(WindowInfo targetWindow)
+        {
+            if (_isActive) return;
+            _targetWindow = targetWindow;
             _isActive = true;
             AttachHooks();
         }
@@ -43,6 +61,7 @@ namespace WpfEventRecorder.Core.Hooks
         {
             if (!_isActive) return;
             _isActive = false;
+            _targetWindow = null;
             DetachHooks();
         }
 

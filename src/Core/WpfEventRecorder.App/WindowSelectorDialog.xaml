@@ -1,0 +1,90 @@
+<Window x:Class="WpfEventRecorder.App.WindowSelectorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:WpfEventRecorder.App"
+        Title="Select Window to Record"
+        Height="450" Width="550"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        ResizeMode="CanResizeWithGrip">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="Select a window to record:"
+                   FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+
+        <!-- Filter options -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+            <CheckBox x:Name="WpfOnlyCheckBox"
+                      Content="Show WPF apps only"
+                      IsChecked="True"
+                      Checked="WpfOnlyCheckBox_Changed"
+                      Unchecked="WpfOnlyCheckBox_Changed"
+                      VerticalAlignment="Center"/>
+            <Button x:Name="RefreshButton" Content="🔄 Refresh"
+                    Margin="16,0,0,0" Padding="12,4"
+                    Click="RefreshButton_Click"/>
+        </StackPanel>
+
+        <!-- Window List -->
+        <ListView x:Name="WindowList" Grid.Row="2"
+                  SelectionMode="Single"
+                  MouseDoubleClick="WindowList_MouseDoubleClick">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Window Title" Width="250">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding WindowTitle}" TextTrimming="CharacterEllipsis"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Process" Width="120" DisplayMemberBinding="{Binding ProcessName}"/>
+                    <GridViewColumn Header="PID" Width="60" DisplayMemberBinding="{Binding ProcessId}"/>
+                    <GridViewColumn Header="WPF" Width="50">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding IsWpfApp, Converter={StaticResource BoolToYesNoConverter}}"
+                                           Foreground="{Binding IsWpfApp, Converter={StaticResource BoolToColorConverter}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Selected window info -->
+        <Border Grid.Row="3" Background="#F5F5F5" CornerRadius="4" Padding="12" Margin="0,12,0,0">
+            <StackPanel>
+                <TextBlock Text="Selected Window:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBlock x:Name="SelectedWindowText" Text="(none selected)"
+                           Foreground="Gray" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="CancelButton" Content="Cancel"
+                    Width="90" Padding="8,6"
+                    Click="CancelButton_Click" IsCancel="True"/>
+            <Button x:Name="SelectButton" Content="Start Recording"
+                    Width="120" Padding="8,6" Margin="12,0,0,0"
+                    Click="SelectButton_Click" IsDefault="True"
+                    IsEnabled="False"
+                    Background="#0078D4" Foreground="White"/>
+        </StackPanel>
+    </Grid>
+
+    <Window.Resources>
+        <local:BoolToYesNoConverter x:Key="BoolToYesNoConverter"/>
+        <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
+    </Window.Resources>
+</Window>

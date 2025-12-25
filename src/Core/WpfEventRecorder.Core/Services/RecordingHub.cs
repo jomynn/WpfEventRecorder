@@ -142,6 +142,34 @@ namespace WpfEventRecorder.Core.Services
         }
 
         /// <summary>
+        /// Starts a new recording session for a specific target window
+        /// </summary>
+        /// <param name="targetWindow">The window to monitor</param>
+        /// <param name="sessionName">Optional session name</param>
+        public void Start(WindowInfo targetWindow, string? sessionName = null)
+        {
+            if (_isRecording) return;
+            if (targetWindow == null) throw new ArgumentNullException(nameof(targetWindow));
+
+            lock (_lock)
+            {
+                _entries.Clear();
+                _currentSession = RecordingSession.Create(sessionName ?? $"Session_{DateTime.Now:yyyyMMdd_HHmmss}");
+                _currentSession.TargetWindow = targetWindow;
+                _isRecording = true;
+                _currentCorrelationId = Guid.NewGuid().ToString();
+            }
+
+            _uiHook?.Start(targetWindow);
+            if (_httpHandler != null)
+            {
+                _httpHandler.IsActive = true;
+            }
+
+            RecordingStateChanged?.Invoke(this, true);
+        }
+
+        /// <summary>
         /// Stops the current recording session
         /// </summary>
         public void Stop()

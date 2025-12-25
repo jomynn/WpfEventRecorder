@@ -64,6 +64,11 @@ namespace WpfEventRecorder.Core.Models
         public List<RecordEntry> Entries { get; set; } = new List<RecordEntry>();
 
         /// <summary>
+        /// The target window being recorded
+        /// </summary>
+        public WindowInfo? TargetWindow { get; set; }
+
+        /// <summary>
         /// Additional session metadata
         /// </summary>
         public Dictionary<string, string>? Metadata { get; set; }
