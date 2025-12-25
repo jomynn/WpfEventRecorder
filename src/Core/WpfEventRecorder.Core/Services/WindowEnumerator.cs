@@ -35,11 +35,30 @@ public static class WindowEnumerator
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
     private const uint GW_OWNER = 4;
+    private const int SW_RESTORE = 9;
+    private const int SW_SHOW = 5;
 
     #endregion
+
+    /// <summary>
+    /// Checks if the current platform supports window enumeration
+    /// </summary>
+    public static bool IsSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
     /// <summary>
     /// Gets all visible top-level windows
@@ -47,69 +66,92 @@ public static class WindowEnumerator
     public static List<WindowInfo> GetVisibleWindows()
     {
         var windows = new List<WindowInfo>();
+
+        if (!IsSupported)
+        {
+            return windows;
+        }
+
         var processCache = new Dictionary<uint, Process>();
 
-        EnumWindows((hWnd, lParam) =>
+        try
         {
-            // Skip invisible windows
-            if (!IsWindowVisible(hWnd))
-                return true;
-
-            // Skip windows with no title
-            var titleLength = GetWindowTextLength(hWnd);
-            if (titleLength == 0)
-                return true;
-
-            // Skip owned windows (popup, child windows)
-            if (GetWindow(hWnd, GW_OWNER) != IntPtr.Zero)
-                return true;
-
-            // Get window title
-            var titleBuilder = new StringBuilder(titleLength + 1);
-            GetWindowText(hWnd, titleBuilder, titleBuilder.Capacity);
-            var title = titleBuilder.ToString();
-
-            // Get process ID
-            GetWindowThreadProcessId(hWnd, out uint processId);
-
-            // Get process info
-            if (!processCache.TryGetValue(processId, out var process))
+            EnumWindows((hWnd, lParam) =>
             {
                 try
                 {
-                    process = Process.GetProcessById((int)processId);
-                    processCache[processId] = process;
+                    // Skip invisible windows (but include minimized windows)
+                    if (!IsWindowVisible(hWnd) && !IsIconic(hWnd))
+                        return true;
+
+                    // Skip windows with no title
+                    var titleLength = GetWindowTextLength(hWnd);
+                    if (titleLength == 0)
+                        return true;
+
+                    // Skip owned windows (popup, child windows)
+                    if (GetWindow(hWnd, GW_OWNER) != IntPtr.Zero)
+                        return true;
+
+                    // Get window title
+                    var titleBuilder = new StringBuilder(titleLength + 1);
+                    GetWindowText(hWnd, titleBuilder, titleBuilder.Capacity);
+                    var title = titleBuilder.ToString();
+
+                    // Get process ID
+                    GetWindowThreadProcessId(hWnd, out uint processId);
+
+                    // Get process info
+                    if (!processCache.TryGetValue(processId, out var process))
+                    {
+                        try
+                        {
+                            process = Process.GetProcessById((int)processId);
+                            processCache[processId] = process;
+                        }
+                        catch
+                        {
+                            return true;
+                        }
+                    }
+
+                    // Check if it's a WPF app by looking for WPF class names
+                    var isWpf = IsWpfWindow(hWnd);
+
+                    // Check if minimized
+                    var isMinimized = IsIconic(hWnd);
+
+                    var windowInfo = new WindowInfo
+                    {
+                        ProcessId = (int)processId,
+                        ProcessName = process.ProcessName,
+                        WindowTitle = isMinimized ? $"{title} (Minimized)" : title,
+                        WindowHandle = hWnd,
+                        IsWpfApp = isWpf
+                    };
+
+                    try
+                    {
+                        windowInfo.ExecutablePath = process.MainModule?.FileName;
+                    }
+                    catch
+                    {
+                        // Access denied for some processes
+                    }
+
+                    windows.Add(windowInfo);
                 }
                 catch
                 {
-                    return true;
+                    // Skip windows that cause errors
                 }
-            }
-
-            // Check if it's a WPF app by looking for WPF class names
-            var isWpf = IsWpfWindow(hWnd);
-
-            var windowInfo = new WindowInfo
-            {
-                ProcessId = (int)processId,
-                ProcessName = process.ProcessName,
-                WindowTitle = title,
-                WindowHandle = hWnd,
-                IsWpfApp = isWpf
-            };
-
-            try
-            {
-                windowInfo.ExecutablePath = process.MainModule?.FileName;
-            }
-            catch
-            {
-                // Access denied for some processes
-            }
-
-            windows.Add(windowInfo);
-            return true;
-        }, IntPtr.Zero);
+                return true;
+            }, IntPtr.Zero);
+        }
+        catch
+        {
+            // Handle platform-specific errors
+        }
 
         // Dispose cached processes
         foreach (var process in processCache.Values)
@@ -150,5 +192,66 @@ public static class WindowEnumerator
     public static List<WindowInfo> Refresh(bool wpfOnly = false)
     {
         return wpfOnly ? GetWpfWindows() : GetVisibleWindows();
+    }
+
+    /// <summary>
+    /// Brings the specified window to the foreground
+    /// </summary>
+    /// <param name="windowInfo">The window to bring to front</param>
+    /// <returns>True if successful</returns>
+    public static bool BringToFront(WindowInfo windowInfo)
+    {
+        if (!IsSupported || windowInfo == null || windowInfo.WindowHandle == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        try
+        {
+            // If window is minimized, restore it first
+            if (IsIconic(windowInfo.WindowHandle))
+            {
+                ShowWindow(windowInfo.WindowHandle, SW_RESTORE);
+            }
+            else
+            {
+                ShowWindow(windowInfo.WindowHandle, SW_SHOW);
+            }
+
+            // Bring to foreground
+            return SetForegroundWindow(windowInfo.WindowHandle);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets the currently active foreground window
+    /// </summary>
+    /// <returns>The window info of the foreground window, or null if not found</returns>
+    public static WindowInfo? GetForegroundWindowInfo()
+    {
+        if (!IsSupported)
+        {
+            return null;
+        }
+
+        try
+        {
+            var hWnd = GetForegroundWindow();
+            if (hWnd == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            var windows = GetVisibleWindows();
+            return windows.Find(w => w.WindowHandle == hWnd);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

@@ -36,6 +36,14 @@ public partial class WindowSelectorDialog : Window
     {
         _windows.Clear();
 
+        // Check if window enumeration is supported on this platform
+        if (!WindowEnumerator.IsSupported)
+        {
+            SelectedWindowText.Text = "(Window enumeration is only supported on Windows)";
+            SelectedWindowText.Foreground = new SolidColorBrush(Colors.Red);
+            return;
+        }
+
         var wpfOnly = WpfOnlyCheckBox.IsChecked == true;
         var windows = WindowEnumerator.Refresh(wpfOnly);
 
@@ -61,6 +69,7 @@ public partial class WindowSelectorDialog : Window
     {
         var selectedWindow = WindowList.SelectedItem as WindowInfo;
         SelectButton.IsEnabled = selectedWindow != null;
+        BringToFrontButton.IsEnabled = selectedWindow != null;
 
         if (selectedWindow != null)
         {
@@ -105,6 +114,34 @@ public partial class WindowSelectorDialog : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void BringToFrontButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (WindowList.SelectedItem is WindowInfo selectedWindow)
+        {
+            var success = WindowEnumerator.BringToFront(selectedWindow);
+            if (success)
+            {
+                // Refresh the list to update window titles (minimized status may have changed)
+                RefreshWindowList();
+
+                // Re-select the same window if it's still in the list
+                foreach (var window in _windows)
+                {
+                    if (window.WindowHandle == selectedWindow.WindowHandle)
+                    {
+                        WindowList.SelectedItem = window;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Could not bring the window to the foreground.",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
     }
 }
 

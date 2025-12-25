@@ -62,11 +62,24 @@
 
         <!-- Selected window info -->
         <Border Grid.Row="3" Background="#F5F5F5" CornerRadius="4" Padding="12" Margin="0,12,0,0">
-            <StackPanel>
-                <TextBlock Text="Selected Window:" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                <TextBlock x:Name="SelectedWindowText" Text="(none selected)"
-                           Foreground="Gray" TextWrapping="Wrap"/>
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Selected Window:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="SelectedWindowText" Text="(none selected)"
+                               Foreground="Gray" TextWrapping="Wrap"/>
+                </StackPanel>
+                <Button x:Name="BringToFrontButton" Grid.Column="1"
+                        Content="↗ Bring to Front"
+                        Padding="12,6" Margin="12,0,0,0"
+                        VerticalAlignment="Center"
+                        Click="BringToFrontButton_Click"
+                        IsEnabled="False"
+                        ToolTip="Bring the selected window to the foreground"/>
+            </Grid>
         </Border>
 
         <!-- Buttons -->
