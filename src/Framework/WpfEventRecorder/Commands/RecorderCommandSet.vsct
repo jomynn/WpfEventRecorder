@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable"
+              xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
+
+  <Commands package="guidWpfEventRecorderPackage">
+
+    <!-- Top-level Menus / Toolbars -->
+    <Menus>
+      <!-- Main Toolbar -->
+      <Menu guid="guidRecorderCmdSet" id="RecorderToolbar" type="Toolbar" priority="0x0000">
+        <Parent guid="guidRecorderCmdSet" id="RecorderToolbar"/>
+        <Strings>
+          <ButtonText>WPF Event Recorder</ButtonText>
+          <CommandName>WPF Event Recorder</CommandName>
+        </Strings>
+      </Menu>
+
+      <!-- Tools Menu Submenu -->
+      <Menu guid="guidRecorderCmdSet" id="RecorderSubMenu" priority="0x0700" type="Menu">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_TOOLS_OTHER2"/>
+        <Strings>
+          <ButtonText>WPF Event Recorder</ButtonText>
+        </Strings>
+      </Menu>
+    </Menus>
+
+    <!-- Groups -->
+    <Groups>
+      <!-- Toolbar button group -->
+      <Group guid="guidRecorderCmdSet" id="RecorderToolbarGroup" priority="0x0600">
+        <Parent guid="guidRecorderCmdSet" id="RecorderToolbar"/>
+      </Group>
+
+      <!-- Secondary toolbar group (save, clear, window) -->
+      <Group guid="guidRecorderCmdSet" id="RecorderToolbarGroup2" priority="0x0601">
+        <Parent guid="guidRecorderCmdSet" id="RecorderToolbar"/>
+      </Group>
+
+      <!-- Tools menu group -->
+      <Group guid="guidRecorderCmdSet" id="RecorderMenuGroup" priority="0x0600">
+        <Parent guid="guidRecorderCmdSet" id="RecorderSubMenu"/>
+      </Group>
+    </Groups>
+
+    <!-- Buttons -->
+    <Buttons>
+      <!-- Start Recording -->
+      <Button guid="guidRecorderCmdSet" id="cmdidStartRecording" priority="0x0100" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderToolbarGroup"/>
+        <Icon guid="guidImages" id="bmpStart"/>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Start Recording</ButtonText>
+          <MenuText>Start Recording</MenuText>
+          <ToolTipText>Start recording WPF events (Ctrl+Alt+R)</ToolTipText>
+          <CanonicalName>WpfRecorder.Start</CanonicalName>
+          <LocCanonicalName>WpfRecorder.Start</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <!-- Stop Recording -->
+      <Button guid="guidRecorderCmdSet" id="cmdidStopRecording" priority="0x0101" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderToolbarGroup"/>
+        <Icon guid="guidImages" id="bmpStop"/>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Stop Recording</ButtonText>
+          <MenuText>Stop Recording</MenuText>
+          <ToolTipText>Stop recording WPF events (Ctrl+Alt+S)</ToolTipText>
+          <CanonicalName>WpfRecorder.Stop</CanonicalName>
+          <LocCanonicalName>WpfRecorder.Stop</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <!-- Save Recording -->
+      <Button guid="guidRecorderCmdSet" id="cmdidSaveRecording" priority="0x0102" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderToolbarGroup2"/>
+        <Icon guid="guidImages" id="bmpSave"/>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Save Recording</ButtonText>
+          <MenuText>Save Recording...</MenuText>
+          <ToolTipText>Save recorded events to JSON file (Ctrl+Alt+E)</ToolTipText>
+          <CanonicalName>WpfRecorder.Save</CanonicalName>
+          <LocCanonicalName>WpfRecorder.Save</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <!-- Clear Recording -->
+      <Button guid="guidRecorderCmdSet" id="cmdidClearRecording" priority="0x0103" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderToolbarGroup2"/>
+        <Icon guid="guidImages" id="bmpClear"/>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Clear Recording</ButtonText>
+          <MenuText>Clear Recording</MenuText>
+          <ToolTipText>Clear all recorded events</ToolTipText>
+          <CanonicalName>WpfRecorder.Clear</CanonicalName>
+          <LocCanonicalName>WpfRecorder.Clear</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <!-- Open Tool Window -->
+      <Button guid="guidRecorderCmdSet" id="cmdidOpenToolWindow" priority="0x0104" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderToolbarGroup2"/>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Event Viewer</ButtonText>
+          <MenuText>Open Event Viewer</MenuText>
+          <ToolTipText>Open WPF Event Recorder Tool Window</ToolTipText>
+          <CanonicalName>WpfRecorder.OpenWindow</CanonicalName>
+          <LocCanonicalName>WpfRecorder.OpenWindow</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <!-- Menu duplicates for Tools menu -->
+      <Button guid="guidRecorderCmdSet" id="cmdidMenuStart" priority="0x0100" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderMenuGroup"/>
+        <Icon guid="guidImages" id="bmpStart"/>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Start Recording</ButtonText>
+          <ToolTipText>Start recording WPF events</ToolTipText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidRecorderCmdSet" id="cmdidMenuStop" priority="0x0101" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderMenuGroup"/>
+        <Icon guid="guidImages" id="bmpStop"/>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Stop Recording</ButtonText>
+          <ToolTipText>Stop recording WPF events</ToolTipText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidRecorderCmdSet" id="cmdidMenuSave" priority="0x0102" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderMenuGroup"/>
+        <Icon guid="guidImages" id="bmpSave"/>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Save Recording...</ButtonText>
+          <ToolTipText>Save recorded events to file</ToolTipText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidRecorderCmdSet" id="cmdidMenuWindow" priority="0x0103" type="Button">
+        <Parent guid="guidRecorderCmdSet" id="RecorderMenuGroup"/>
+        <Strings>
+          <ButtonText>Open Event Viewer</ButtonText>
+          <ToolTipText>Open Event Viewer window</ToolTipText>
+        </Strings>
+      </Button>
+    </Buttons>
+
+    <!-- Bitmaps -->
+    <Bitmaps>
+      <Bitmap guid="guidImages" href="..\Resources\RecorderIcons.png"
+              usedList="bmpStart, bmpStop, bmpSave, bmpClear"/>
+    </Bitmaps>
+  </Commands>
+
+  <!-- Key Bindings -->
+  <KeyBindings>
+    <KeyBinding guid="guidRecorderCmdSet" id="cmdidStartRecording"
+                editor="guidVSStd97" key1="R" mod1="Control Alt"/>
+    <KeyBinding guid="guidRecorderCmdSet" id="cmdidStopRecording"
+                editor="guidVSStd97" key1="S" mod1="Control Alt"/>
+    <KeyBinding guid="guidRecorderCmdSet" id="cmdidSaveRecording"
+                editor="guidVSStd97" key1="E" mod1="Control Alt"/>
+  </KeyBindings>
+
+  <!-- Command Placements (duplicate commands in multiple locations) -->
+  <CommandPlacements>
+    <CommandPlacement guid="guidRecorderCmdSet" id="cmdidStartRecording" priority="0x0100">
+      <Parent guid="guidRecorderCmdSet" id="RecorderMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="guidRecorderCmdSet" id="cmdidStopRecording" priority="0x0101">
+      <Parent guid="guidRecorderCmdSet" id="RecorderMenuGroup"/>
+    </CommandPlacement>
+  </CommandPlacements>
+
+  <!-- Visibility Constraints -->
+  <VisibilityConstraints>
+    <VisibilityItem guid="guidRecorderCmdSet" id="RecorderToolbar" context="UICONTEXT_SolutionExists"/>
+  </VisibilityConstraints>
+
+  <Symbols>
+    <!-- Package GUID -->
+    <GuidSymbol name="guidWpfEventRecorderPackage" value="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"/>
+
+    <!-- Command Set GUID -->
+    <GuidSymbol name="guidRecorderCmdSet" value="{B2C3D4E5-F6A7-8901-BCDE-F12345678901}">
+      <!-- Menus -->
+      <IDSymbol name="RecorderToolbar" value="0x1000"/>
+      <IDSymbol name="RecorderSubMenu" value="0x1100"/>
+
+      <!-- Groups -->
+      <IDSymbol name="RecorderToolbarGroup" value="0x1050"/>
+      <IDSymbol name="RecorderToolbarGroup2" value="0x1051"/>
+      <IDSymbol name="RecorderMenuGroup" value="0x1060"/>
+
+      <!-- Toolbar Commands -->
+      <IDSymbol name="cmdidStartRecording" value="0x0100"/>
+      <IDSymbol name="cmdidStopRecording" value="0x0101"/>
+      <IDSymbol name="cmdidSaveRecording" value="0x0102"/>
+      <IDSymbol name="cmdidClearRecording" value="0x0103"/>
+      <IDSymbol name="cmdidOpenToolWindow" value="0x0104"/>
+
+      <!-- Menu Commands -->
+      <IDSymbol name="cmdidMenuStart" value="0x0200"/>
+      <IDSymbol name="cmdidMenuStop" value="0x0201"/>
+      <IDSymbol name="cmdidMenuSave" value="0x0202"/>
+      <IDSymbol name="cmdidMenuWindow" value="0x0203"/>
+    </GuidSymbol>
+
+    <!-- Images GUID -->
+    <GuidSymbol name="guidImages" value="{C3D4E5F6-A7B8-9012-CDEF-123456789012}">
+      <IDSymbol name="bmpStart" value="1"/>
+      <IDSymbol name="bmpStop" value="2"/>
+      <IDSymbol name="bmpSave" value="3"/>
+      <IDSymbol name="bmpClear" value="4"/>
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>

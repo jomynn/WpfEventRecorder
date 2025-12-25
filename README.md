@@ -1,6 +1,6 @@
 # WPF Event Recorder
 
-A Visual Studio 2022 extension that records WPF application interactions for automation testing. Captures UI events and HTTP API calls with correlation tracking.
+A library and toolset for recording WPF application interactions for automation testing. Captures UI events and HTTP API calls with correlation tracking.
 
 ## Features
 
@@ -12,32 +12,52 @@ A Visual Studio 2022 extension that records WPF application interactions for aut
 
 ## Solution Structure
 
+This repository contains two solutions targeting different .NET versions:
+
 ```
-WpfEventRecorder.sln
-├── WpfEventRecorder/                 # VSIX Extension (net48)
-├── WpfEventRecorder.Core/            # Core recording library (netstandard2.0)
-├── WpfEventRecorder.SampleApp/       # Sample WPF app (net6.0-windows)
-└── WpfEventRecorder.Tests/           # Unit tests (xUnit)
+WpfEventRecorder/
+├── src/
+│   ├── Framework/                        # .NET Framework 4.7.2 Solution
+│   │   ├── WpfEventRecorder.Framework.sln
+│   │   ├── WpfEventRecorder/             # VSIX Extension for VS2022
+│   │   ├── WpfEventRecorder.Core/        # Core recording library
+│   │   ├── WpfEventRecorder.SampleApp/   # Sample WPF app
+│   │   └── WpfEventRecorder.Tests/       # Unit tests (xUnit)
+│   │
+│   └── Core/                             # .NET 8 Solution
+│       ├── WpfEventRecorder.Core.sln
+│       ├── WpfEventRecorder.Core/        # Core recording library
+│       ├── WpfEventRecorder.App/         # Standalone WPF app
+│       └── WpfEventRecorder.Tests/       # Unit tests (xUnit)
+│
+├── docs/                                 # Documentation
+└── README.md
 ```
+
+## Choosing a Solution
+
+| Solution | Target Framework | Use Case |
+|----------|------------------|----------|
+| **Framework** | .NET Framework 4.7.2 | VS2022 Extension (VSIX), legacy WPF apps |
+| **Core** | .NET 8 | Modern WPF apps, standalone recorder app |
 
 ## Installation
 
-### From VSIX
+### .NET Framework 4.7.2 (VSIX Extension)
 
-1. Build the solution in Release mode
-2. Find `WpfEventRecorder.vsix` in the output folder
-3. Double-click to install in Visual Studio 2022
+1. Open `src/Framework/WpfEventRecorder.Framework.sln` in Visual Studio 2022
+2. Build in Release mode
+3. Find `WpfEventRecorder.vsix` in the output folder
+4. Double-click to install in Visual Studio 2022
 
-### From Source
+### .NET 8 (Standalone App)
 
-1. Clone the repository
-2. Open `WpfEventRecorder.sln` in Visual Studio 2022
-3. Set `WpfEventRecorder` as the startup project
-4. Press F5 to debug (launches VS Experimental Instance)
+1. Open `src/Core/WpfEventRecorder.Core.sln` in Visual Studio 2022
+2. Build and run `WpfEventRecorder.App`
 
 ## Usage
 
-### In Visual Studio
+### In Visual Studio (Framework Solution)
 
 1. Open a WPF solution
 2. Use the **WPF Event Recorder** toolbar or go to **Tools > WPF Event Recorder**
@@ -46,7 +66,15 @@ WpfEventRecorder.sln
 5. Click **Stop Recording** (or press `Ctrl+Alt+S`)
 6. Click **Save Recording** (or press `Ctrl+Alt+E`) to export as JSON
 
-### Keyboard Shortcuts
+### Standalone App (Core Solution)
+
+1. Run `WpfEventRecorder.App`
+2. Click **Start Recording**
+3. Interact with your WPF application (requires integration)
+4. Click **Stop Recording**
+5. Click **Save** to export as JSON
+
+### Keyboard Shortcuts (VSIX)
 
 | Action | Shortcut |
 |--------|----------|
@@ -229,17 +257,23 @@ string ExportAsJson();
 
 ## Requirements
 
+### Framework Solution (.NET Framework 4.7.2)
 - Visual Studio 2022 (17.0 or later)
-- .NET Framework 4.8 (for VSIX)
-- .NET 6.0+ (for Sample App)
+- .NET Framework 4.7.2 SDK
+- Windows 10/11
+
+### Core Solution (.NET 8)
+- Visual Studio 2022 (17.8 or later) or VS Code
+- .NET 8 SDK
+- Windows 10/11
 
 ## Building
 
-```bash
-# Restore packages
-dotnet restore
+### Framework Solution
 
-# Build all projects
+```bash
+cd src/Framework
+dotnet restore
 dotnet build
 
 # Run tests
@@ -247,6 +281,20 @@ dotnet test
 
 # Create VSIX package
 msbuild /t:Build /p:Configuration=Release WpfEventRecorder/WpfEventRecorder.csproj
+```
+
+### Core Solution
+
+```bash
+cd src/Core
+dotnet restore
+dotnet build
+
+# Run tests
+dotnet test
+
+# Run the app
+dotnet run --project WpfEventRecorder.App
 ```
 
 ## Contributing
