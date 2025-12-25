@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -288,6 +291,117 @@ namespace WpfEventRecorder.ToolWindows
                                     MessageBoxButton.OK,
                                     MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+                DefaultExt = ".json",
+                Title = "Load Recording"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    var json = File.ReadAllText(dialog.FileName);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    };
+
+                    List<RecordEntry>? entries = null;
+
+                    // Try to parse as RecordingSession first (the format SaveButton uses)
+                    try
+                    {
+                        var session = JsonSerializer.Deserialize<RecordingSession>(json, options);
+                        if (session?.Entries != null && session.Entries.Count > 0)
+                        {
+                            entries = session.Entries;
+                        }
+                    }
+                    catch
+                    {
+                        // If that fails, try as simple List<RecordEntry>
+                    }
+
+                    // If session parsing didn't work, try as plain list
+                    if (entries == null)
+                    {
+                        entries = JsonSerializer.Deserialize<List<RecordEntry>>(json, options);
+                    }
+
+                    if (entries != null && entries.Count > 0)
+                    {
+                        // Ask if user wants to append or replace
+                        MessageBoxResult result = MessageBoxResult.Yes;
+                        if (_entries.Count > 0)
+                        {
+                            result = MessageBox.Show(
+                                $"Found {entries.Count} entries in the file.\n\nDo you want to replace existing entries?\n\nYes = Replace existing\nNo = Append to existing\nCancel = Cancel load",
+                                "Load Recording",
+                                MessageBoxButton.YesNoCancel,
+                                MessageBoxImage.Question);
+
+                            if (result == MessageBoxResult.Cancel)
+                                return;
+                        }
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            _entries.Clear();
+                            RecordingHub.Instance.Clear();
+                        }
+
+                        foreach (var entry in entries)
+                        {
+                            _entries.Add(new RecordEntryViewModel(entry));
+                        }
+
+                        // Update header checkbox state
+                        SelectAllCheckBox.IsChecked = _entries.All(x => x.IsSelectedForExport);
+
+                        UpdateSelectedCount();
+                        UpdateUI();
+
+                        MessageBox.Show($"Loaded {entries.Count} entries from {dialog.FileName}",
+                                        "Load Successful",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("No entries found in the file.",
+                                        "Load Recording",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading recording: {ex.Message}",
+                                    "Load Error",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void SelectAllCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox)
+            {
+                var isChecked = checkBox.IsChecked ?? false;
+                foreach (var entry in _entries)
+                {
+                    entry.IsSelectedForExport = isChecked;
+                }
+                UpdateSelectedCount();
+                UpdateUI();
             }
         }
     }

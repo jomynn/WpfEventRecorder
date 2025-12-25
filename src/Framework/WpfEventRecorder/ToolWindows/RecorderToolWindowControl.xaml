@@ -58,6 +58,10 @@
                         Click="SaveButton_Click"
                         IsEnabled="False"
                         ToolTip="Save recording to JSON file (Ctrl+Alt+E)"/>
+                <Button x:Name="LoadButton" Content="Load"
+                        Style="{StaticResource ToolbarButtonStyle}"
+                        Click="LoadButton_Click"
+                        ToolTip="Load recording from JSON file"/>
                 <Button x:Name="SaveCsvButton" Content="CSV"
                         Style="{StaticResource ToolbarButtonStyle}"
                         Click="SaveCsvButton_Click"
@@ -120,9 +124,15 @@
             <ListView.View>
                 <GridView>
                     <GridViewColumn Width="30">
+                        <GridViewColumn.Header>
+                            <CheckBox x:Name="SelectAllCheckBox"
+                                      Click="SelectAllCheckBox_Click"
+                                      ToolTip="Select/Deselect All"
+                                      IsChecked="True"/>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelectedForExport, Mode=TwoWay}"
+                                <CheckBox IsChecked="{Binding IsSelectedForExport, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           Click="CheckBox_Click"
                                           VerticalAlignment="Center"
                                           HorizontalAlignment="Center"/>
