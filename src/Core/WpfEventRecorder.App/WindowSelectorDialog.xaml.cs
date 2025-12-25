@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
@@ -29,7 +30,19 @@ public partial class WindowSelectorDialog : Window
         WindowList.ItemsSource = _windows;
         WindowList.SelectionChanged += WindowList_SelectionChanged;
 
-        Loaded += (s, e) => RefreshWindowList();
+        Loaded += WindowSelectorDialog_Loaded;
+    }
+
+    private void WindowSelectorDialog_Loaded(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            RefreshWindowList();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error loading window list: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void RefreshWindowList()
@@ -44,8 +57,19 @@ public partial class WindowSelectorDialog : Window
             return;
         }
 
-        var wpfOnly = WpfOnlyCheckBox.IsChecked == true;
-        var windows = WindowEnumerator.Refresh(wpfOnly);
+        var wpfOnly = WpfOnlyCheckBox?.IsChecked == true;
+
+        List<WindowInfo> windows;
+        try
+        {
+            windows = WindowEnumerator.Refresh(wpfOnly);
+        }
+        catch (Exception ex)
+        {
+            SelectedWindowText.Text = $"(Error enumerating windows: {ex.Message})";
+            SelectedWindowText.Foreground = new SolidColorBrush(Colors.Red);
+            return;
+        }
 
         // Exclude our own window
         var currentProcessId = Environment.ProcessId;
@@ -62,6 +86,12 @@ public partial class WindowSelectorDialog : Window
             SelectedWindowText.Text = wpfOnly
                 ? "(No WPF applications found. Try unchecking 'Show WPF apps only')"
                 : "(No windows found)";
+            SelectedWindowText.Foreground = new SolidColorBrush(Colors.Orange);
+        }
+        else
+        {
+            SelectedWindowText.Text = $"(Found {_windows.Count} windows)";
+            SelectedWindowText.Foreground = new SolidColorBrush(Colors.Gray);
         }
     }
 

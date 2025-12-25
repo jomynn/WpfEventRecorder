@@ -7,6 +7,10 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         ResizeMode="CanResizeWithGrip">
+    <Window.Resources>
+        <local:BoolToYesNoConverter x:Key="BoolToYesNoConverter"/>
+        <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
+    </Window.Resources>
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -95,9 +99,4 @@
                     Background="#0078D4" Foreground="White"/>
         </StackPanel>
     </Grid>
-
-    <Window.Resources>
-        <local:BoolToYesNoConverter x:Key="BoolToYesNoConverter"/>
-        <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
-    </Window.Resources>
 </Window>
