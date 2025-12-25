@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <!-- Common settings for all projects -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <!-- Suppress common warnings -->
+    <NoWarn>$(NoWarn);NU1701;CS8618</NoWarn>
+  </PropertyGroup>
+</Project>
