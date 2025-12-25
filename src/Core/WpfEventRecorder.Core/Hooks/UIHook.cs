@@ -341,6 +341,7 @@ namespace WpfEventRecorder.Core.Hooks
                     WindowTitle = e.WindowTitle,
                     ScreenPosition = new ScreenPoint { X = e.X, Y = e.Y },
                     VisualTreePath = e.VisualTreePath,
+                    ContentText = e.ContentText,
                     Properties = properties.Count > 0 ? properties : null
                 }
             };

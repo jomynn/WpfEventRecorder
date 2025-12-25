@@ -195,6 +195,8 @@ namespace WpfEventRecorder.ToolWindows
                     sb.AppendLine($"Name: {ui.ControlName ?? "(none)"}");
                     sb.AppendLine($"AutomationId: {ui.AutomationId ?? "(none)"}");
                     sb.AppendLine($"Text: {ui.Text ?? "(none)"}");
+                    if (!string.IsNullOrEmpty(ui.ContentText))
+                        sb.AppendLine($"Content Text: {ui.ContentText}");
 
                     // Values
                     if (!string.IsNullOrEmpty(ui.OldValue) || !string.IsNullOrEmpty(ui.NewValue))

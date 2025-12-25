@@ -269,7 +269,10 @@ public class GlobalInputHook : IDisposable
             ColumnIndex = elementInfo.ColumnIndex,
 
             // Visual tree path
-            VisualTreePath = elementInfo.VisualTreePath
+            VisualTreePath = elementInfo.VisualTreePath,
+
+            // Content text (for buttons, menu items, etc.)
+            ContentText = elementInfo.ContentText
         };
 
         MouseClick?.Invoke(this, args);
@@ -389,7 +392,7 @@ public class GlobalInputHook : IDisposable
                 info.BoundingRectangle = element.Current.BoundingRectangle;
                 info.ProcessId = element.Current.ProcessId;
 
-                // Try to get text value from ValuePattern
+                // Try to get text value from ValuePattern (for TextBox, etc.)
                 if (element.TryGetCurrentPattern(ValuePattern.Pattern, out object? valuePattern))
                 {
                     var vp = (ValuePattern)valuePattern;
@@ -397,9 +400,47 @@ public class GlobalInputHook : IDisposable
                     info.Text = info.Value;
                     info.IsReadOnly = vp.Current.IsReadOnly;
                 }
-                else
+
+                // Try to get text from TextPattern (for rich text controls)
+                if (string.IsNullOrEmpty(info.Text) && element.TryGetCurrentPattern(TextPattern.Pattern, out object? textPattern))
+                {
+                    var tp = (TextPattern)textPattern;
+                    try
+                    {
+                        var textRange = tp.DocumentRange;
+                        info.Text = textRange.GetText(-1); // Get all text
+                    }
+                    catch
+                    {
+                        // Ignore text pattern errors
+                    }
+                }
+
+                // For buttons, labels, and other controls - get the Name which contains the display text
+                if (string.IsNullOrEmpty(info.Text))
                 {
                     info.Text = element.Current.Name;
+                }
+
+                // If still no text, try to get text from child Text element (for composite controls like Button with TextBlock)
+                if (string.IsNullOrEmpty(info.Text))
+                {
+                    info.Text = GetChildTextContent(element);
+                }
+
+                // Store the content text separately for buttons (the text displayed on the button)
+                if (element.Current.ControlType == ControlType.Button ||
+                    element.Current.ControlType == ControlType.MenuItem ||
+                    element.Current.ControlType == ControlType.TabItem ||
+                    element.Current.ControlType == ControlType.TreeItem ||
+                    element.Current.ControlType == ControlType.ListItem)
+                {
+                    // For these controls, Name typically contains the display text
+                    info.ContentText = element.Current.Name;
+                    if (string.IsNullOrEmpty(info.ContentText))
+                    {
+                        info.ContentText = GetChildTextContent(element);
+                    }
                 }
 
                 // Try to get toggle state (for checkboxes, radio buttons, toggle buttons)
@@ -518,6 +559,50 @@ public class GlobalInputHook : IDisposable
         }
 
         return string.Join(" > ", path);
+    }
+
+    /// <summary>
+    /// Gets text content from child elements (for composite controls like Button containing TextBlock)
+    /// </summary>
+    private string? GetChildTextContent(AutomationElement element)
+    {
+        try
+        {
+            var walker = TreeWalker.ControlViewWalker;
+            var child = walker.GetFirstChild(element);
+
+            while (child != null)
+            {
+                // Check if this child is a Text element
+                if (child.Current.ControlType == ControlType.Text)
+                {
+                    var text = child.Current.Name;
+                    if (!string.IsNullOrEmpty(text))
+                        return text;
+                }
+
+                // Try ValuePattern on child
+                if (child.TryGetCurrentPattern(ValuePattern.Pattern, out object? valuePattern))
+                {
+                    var value = ((ValuePattern)valuePattern).Current.Value;
+                    if (!string.IsNullOrEmpty(value))
+                        return value;
+                }
+
+                // Recursively check children
+                var childText = GetChildTextContent(child);
+                if (!string.IsNullOrEmpty(childText))
+                    return childText;
+
+                child = walker.GetNextSibling(child);
+            }
+        }
+        catch
+        {
+            // Ignore errors traversing children
+        }
+
+        return null;
     }
 
     private ElementInfo GetFocusedElementInfo()
@@ -643,6 +728,9 @@ public class GlobalInputHook : IDisposable
 
         // Visual tree path
         public string? VisualTreePath { get; set; }
+
+        // Content text (for buttons, menu items, etc. - the text displayed on the control)
+        public string? ContentText { get; set; }
     }
 }
 
@@ -696,6 +784,9 @@ public class MouseClickEventArgs : EventArgs
 
     // Visual tree path
     public string? VisualTreePath { get; set; }
+
+    // Content text (for buttons, menu items, etc. - the text displayed on the control)
+    public string? ContentText { get; set; }
 }
 
 /// <summary>

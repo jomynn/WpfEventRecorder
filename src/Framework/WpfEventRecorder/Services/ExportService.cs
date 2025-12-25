@@ -20,7 +20,7 @@ namespace WpfEventRecorder.Services
             var sb = new StringBuilder();
 
             // Header row - includes new properties
-            sb.AppendLine("Timestamp,Type,ControlType,ControlName,AutomationId,Text,OldValue,NewValue,WindowTitle,VisualTreePath,ScreenX,ScreenY,KeyCombination,Properties,Method,URL,StatusCode,Duration,CorrelationId");
+            sb.AppendLine("Timestamp,Type,ControlType,ControlName,AutomationId,Text,ContentText,OldValue,NewValue,WindowTitle,VisualTreePath,ScreenX,ScreenY,KeyCombination,Properties,Method,URL,StatusCode,Duration,CorrelationId");
 
             foreach (var entry in entries)
             {
@@ -30,6 +30,7 @@ namespace WpfEventRecorder.Services
                 var controlName = EscapeCsv(entry.UIInfo?.ControlName ?? "");
                 var automationId = EscapeCsv(entry.UIInfo?.AutomationId ?? "");
                 var text = EscapeCsv(entry.UIInfo?.Text ?? "");
+                var contentText = EscapeCsv(entry.UIInfo?.ContentText ?? "");
                 var oldValue = EscapeCsv(entry.UIInfo?.OldValue ?? "");
                 var newValue = EscapeCsv(entry.UIInfo?.NewValue ?? "");
                 var windowTitle = EscapeCsv(entry.UIInfo?.WindowTitle ?? "");
@@ -44,7 +45,7 @@ namespace WpfEventRecorder.Services
                 var duration = entry.DurationMs?.ToString() ?? "";
                 var correlationId = EscapeCsv(entry.CorrelationId ?? "");
 
-                sb.AppendLine($"{timestamp},{type},{controlType},{controlName},{automationId},{text},{oldValue},{newValue},{windowTitle},{visualTreePath},{screenX},{screenY},{keyCombination},{properties},{method},{url},{statusCode},{duration},{correlationId}");
+                sb.AppendLine($"{timestamp},{type},{controlType},{controlName},{automationId},{text},{contentText},{oldValue},{newValue},{windowTitle},{visualTreePath},{screenX},{screenY},{keyCombination},{properties},{method},{url},{statusCode},{duration},{correlationId}");
             }
 
             File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
@@ -88,7 +89,7 @@ namespace WpfEventRecorder.Services
 
             // Worksheet
             sb.AppendLine("  <Worksheet ss:Name=\"Recorded Events\">");
-            sb.AppendLine($"    <Table ss:ExpandedColumnCount=\"19\" ss:ExpandedRowCount=\"{entryList.Count + 1}\">");
+            sb.AppendLine($"    <Table ss:ExpandedColumnCount=\"20\" ss:ExpandedRowCount=\"{entryList.Count + 1}\">");
 
             // Column widths - includes new columns
             sb.AppendLine("      <Column ss:Width=\"140\"/>"); // Timestamp
@@ -97,6 +98,7 @@ namespace WpfEventRecorder.Services
             sb.AppendLine("      <Column ss:Width=\"120\"/>"); // ControlName
             sb.AppendLine("      <Column ss:Width=\"120\"/>"); // AutomationId
             sb.AppendLine("      <Column ss:Width=\"150\"/>"); // Text
+            sb.AppendLine("      <Column ss:Width=\"150\"/>"); // ContentText
             sb.AppendLine("      <Column ss:Width=\"100\"/>"); // OldValue
             sb.AppendLine("      <Column ss:Width=\"100\"/>"); // NewValue
             sb.AppendLine("      <Column ss:Width=\"150\"/>"); // WindowTitle
@@ -119,6 +121,7 @@ namespace WpfEventRecorder.Services
             WriteExcelCell(sb, "ControlName", "Header");
             WriteExcelCell(sb, "AutomationId", "Header");
             WriteExcelCell(sb, "Text", "Header");
+            WriteExcelCell(sb, "ContentText", "Header");
             WriteExcelCell(sb, "OldValue", "Header");
             WriteExcelCell(sb, "NewValue", "Header");
             WriteExcelCell(sb, "WindowTitle", "Header");
@@ -147,6 +150,7 @@ namespace WpfEventRecorder.Services
                 WriteExcelCell(sb, entry.UIInfo?.ControlName ?? "", style);
                 WriteExcelCell(sb, entry.UIInfo?.AutomationId ?? "", style);
                 WriteExcelCell(sb, entry.UIInfo?.Text ?? "", style);
+                WriteExcelCell(sb, entry.UIInfo?.ContentText ?? "", style);
                 WriteExcelCell(sb, entry.UIInfo?.OldValue ?? "", style);
                 WriteExcelCell(sb, entry.UIInfo?.NewValue ?? "", style);
                 WriteExcelCell(sb, entry.UIInfo?.WindowTitle ?? "", style);

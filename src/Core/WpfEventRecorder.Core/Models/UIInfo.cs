@@ -77,6 +77,11 @@ namespace WpfEventRecorder.Core.Models
         /// CSS-like selector for the control
         /// </summary>
         public string? Selector { get; set; }
+
+        /// <summary>
+        /// Content text displayed on the control (e.g., button text like "Cancel", "OK")
+        /// </summary>
+        public string? ContentText { get; set; }
     }
 
     /// <summary>
