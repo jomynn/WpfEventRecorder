@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace WpfEventRecorder.Core.Models;
 
@@ -23,9 +24,15 @@ public class WindowInfo
     public string WindowTitle { get; set; } = string.Empty;
 
     /// <summary>
-    /// Main window handle
+    /// Main window handle (excluded from serialization)
     /// </summary>
+    [JsonIgnore]
     public IntPtr WindowHandle { get; set; }
+
+    /// <summary>
+    /// Window handle as string for serialization
+    /// </summary>
+    public string WindowHandleHex => WindowHandle == IntPtr.Zero ? "" : $"0x{WindowHandle:X}";
 
     /// <summary>
     /// Path to the executable

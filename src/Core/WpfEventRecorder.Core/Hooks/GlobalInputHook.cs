@@ -227,8 +227,15 @@ public class GlobalInputHook : IDisposable
             ControlName = elementInfo.ControlName,
             AutomationId = elementInfo.AutomationId,
             Text = elementInfo.Text,
+            Value = elementInfo.Value,
             WindowTitle = elementInfo.WindowTitle,
-            WindowHandle = hWnd
+            WindowHandle = hWnd,
+            ClassName = elementInfo.ClassName,
+            FrameworkId = elementInfo.FrameworkId,
+            IsEnabled = elementInfo.IsEnabled,
+            IsSelected = elementInfo.IsSelected,
+            SelectionItemText = elementInfo.SelectionItemText,
+            ToggleState = elementInfo.ToggleState
         };
 
         MouseClick?.Invoke(this, args);
@@ -296,7 +303,12 @@ public class GlobalInputHook : IDisposable
             ControlType = elementInfo.ControlType,
             ControlName = elementInfo.ControlName,
             AutomationId = elementInfo.AutomationId,
-            WindowTitle = elementInfo.WindowTitle
+            WindowTitle = elementInfo.WindowTitle,
+            ClassName = elementInfo.ClassName,
+            FrameworkId = elementInfo.FrameworkId,
+            IsEnabled = elementInfo.IsEnabled,
+            Value = elementInfo.Value,
+            ToggleState = elementInfo.ToggleState
         };
 
         KeyPress?.Invoke(this, args);
@@ -314,15 +326,46 @@ public class GlobalInputHook : IDisposable
                 info.ControlType = element.Current.ControlType.ProgrammaticName.Replace("ControlType.", "");
                 info.ControlName = element.Current.Name;
                 info.AutomationId = element.Current.AutomationId;
+                info.ClassName = element.Current.ClassName;
+                info.FrameworkId = element.Current.FrameworkId;
+                info.IsEnabled = element.Current.IsEnabled;
 
-                // Try to get text value
+                // Try to get text value from ValuePattern
                 if (element.TryGetCurrentPattern(ValuePattern.Pattern, out object? valuePattern))
                 {
-                    info.Text = ((ValuePattern)valuePattern).Current.Value;
+                    info.Value = ((ValuePattern)valuePattern).Current.Value;
+                    info.Text = info.Value;
                 }
                 else
                 {
                     info.Text = element.Current.Name;
+                }
+
+                // Try to get toggle state (for checkboxes, radio buttons, toggle buttons)
+                if (element.TryGetCurrentPattern(TogglePattern.Pattern, out object? togglePattern))
+                {
+                    info.ToggleState = ((TogglePattern)togglePattern).Current.ToggleState.ToString();
+                }
+
+                // Try to get selection item info (for list items, combo box items)
+                if (element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object? selectionItemPattern))
+                {
+                    var selItem = (SelectionItemPattern)selectionItemPattern;
+                    info.IsSelected = selItem.Current.IsSelected;
+                    info.SelectionItemText = element.Current.Name;
+                }
+
+                // For combo boxes, try to get the selected item text
+                if (element.Current.ControlType == ControlType.ComboBox)
+                {
+                    if (element.TryGetCurrentPattern(SelectionPattern.Pattern, out object? selectionPattern))
+                    {
+                        var selection = ((SelectionPattern)selectionPattern).Current.GetSelection();
+                        if (selection.Length > 0)
+                        {
+                            info.SelectionItemText = selection[0].Current.Name;
+                        }
+                    }
                 }
 
                 // Get window title
@@ -353,6 +396,26 @@ public class GlobalInputHook : IDisposable
                 info.ControlType = element.Current.ControlType.ProgrammaticName.Replace("ControlType.", "");
                 info.ControlName = element.Current.Name;
                 info.AutomationId = element.Current.AutomationId;
+                info.ClassName = element.Current.ClassName;
+                info.FrameworkId = element.Current.FrameworkId;
+                info.IsEnabled = element.Current.IsEnabled;
+
+                // Try to get text value from ValuePattern
+                if (element.TryGetCurrentPattern(ValuePattern.Pattern, out object? valuePattern))
+                {
+                    info.Value = ((ValuePattern)valuePattern).Current.Value;
+                    info.Text = info.Value;
+                }
+                else
+                {
+                    info.Text = element.Current.Name;
+                }
+
+                // Try to get toggle state
+                if (element.TryGetCurrentPattern(TogglePattern.Pattern, out object? togglePattern))
+                {
+                    info.ToggleState = ((TogglePattern)togglePattern).Current.ToggleState.ToString();
+                }
 
                 // Get window title
                 var window = GetParentWindow(element);
@@ -407,7 +470,14 @@ public class GlobalInputHook : IDisposable
         public string? ControlName { get; set; }
         public string? AutomationId { get; set; }
         public string? Text { get; set; }
+        public string? Value { get; set; }
         public string? WindowTitle { get; set; }
+        public string? ClassName { get; set; }
+        public string? FrameworkId { get; set; }
+        public bool IsEnabled { get; set; } = true;
+        public bool IsSelected { get; set; }
+        public string? SelectionItemText { get; set; }
+        public string? ToggleState { get; set; }
     }
 }
 
@@ -423,8 +493,15 @@ public class MouseClickEventArgs : EventArgs
     public string? ControlName { get; set; }
     public string? AutomationId { get; set; }
     public string? Text { get; set; }
+    public string? Value { get; set; }
     public string? WindowTitle { get; set; }
     public IntPtr WindowHandle { get; set; }
+    public string? ClassName { get; set; }
+    public string? FrameworkId { get; set; }
+    public bool IsEnabled { get; set; } = true;
+    public bool IsSelected { get; set; }
+    public string? SelectionItemText { get; set; }
+    public string? ToggleState { get; set; }
 }
 
 /// <summary>
@@ -439,6 +516,11 @@ public class KeyboardEventArgs : EventArgs
     public string? ControlName { get; set; }
     public string? AutomationId { get; set; }
     public string? WindowTitle { get; set; }
+    public string? ClassName { get; set; }
+    public string? FrameworkId { get; set; }
+    public bool IsEnabled { get; set; } = true;
+    public string? Value { get; set; }
+    public string? ToggleState { get; set; }
 }
 
 /// <summary>

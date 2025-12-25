@@ -259,6 +259,20 @@ namespace WpfEventRecorder.Core.Hooks
 
             var entryType = e.IsDoubleClick ? RecordEntryType.UIDoubleClick : RecordEntryType.UIClick;
 
+            var properties = new Dictionary<string, string>();
+            if (!string.IsNullOrEmpty(e.ClassName))
+                properties["ClassName"] = e.ClassName;
+            if (!string.IsNullOrEmpty(e.FrameworkId))
+                properties["FrameworkId"] = e.FrameworkId;
+            if (!string.IsNullOrEmpty(e.ToggleState))
+                properties["ToggleState"] = e.ToggleState;
+            if (!string.IsNullOrEmpty(e.SelectionItemText))
+                properties["SelectedItem"] = e.SelectionItemText;
+            if (e.IsSelected)
+                properties["IsSelected"] = "true";
+            if (!e.IsEnabled)
+                properties["IsEnabled"] = "false";
+
             var entry = new RecordEntry
             {
                 EntryType = entryType,
@@ -268,8 +282,10 @@ namespace WpfEventRecorder.Core.Hooks
                     ControlName = e.ControlName,
                     AutomationId = e.AutomationId,
                     Text = e.Text,
+                    NewValue = e.Value,
                     WindowTitle = e.WindowTitle,
-                    ScreenPosition = new ScreenPoint { X = e.X, Y = e.Y }
+                    ScreenPosition = new ScreenPoint { X = e.X, Y = e.Y },
+                    Properties = properties.Count > 0 ? properties : null
                 }
             };
 
@@ -279,6 +295,16 @@ namespace WpfEventRecorder.Core.Hooks
         private void OnKeyPress(object? sender, KeyboardEventArgs e)
         {
             if (!_isActive) return;
+
+            var properties = new Dictionary<string, string>();
+            if (!string.IsNullOrEmpty(e.ClassName))
+                properties["ClassName"] = e.ClassName;
+            if (!string.IsNullOrEmpty(e.FrameworkId))
+                properties["FrameworkId"] = e.FrameworkId;
+            if (!string.IsNullOrEmpty(e.ToggleState))
+                properties["ToggleState"] = e.ToggleState;
+            if (!e.IsEnabled)
+                properties["IsEnabled"] = "false";
 
             // Record keyboard events
             var entry = new RecordEntry
@@ -290,7 +316,9 @@ namespace WpfEventRecorder.Core.Hooks
                     ControlName = e.ControlName,
                     AutomationId = e.AutomationId,
                     KeyCombination = e.KeyCombination,
-                    WindowTitle = e.WindowTitle
+                    WindowTitle = e.WindowTitle,
+                    NewValue = e.Value,
+                    Properties = properties.Count > 0 ? properties : null
                 }
             };
 
