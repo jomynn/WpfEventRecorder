@@ -19,8 +19,8 @@ namespace WpfEventRecorder.Services
         {
             var sb = new StringBuilder();
 
-            // Header row
-            sb.AppendLine("Timestamp,Type,ControlType,ControlName,AutomationId,Text,OldValue,NewValue,WindowTitle,KeyCombination,Method,URL,StatusCode,Duration,CorrelationId");
+            // Header row - includes new properties
+            sb.AppendLine("Timestamp,Type,ControlType,ControlName,AutomationId,Text,OldValue,NewValue,WindowTitle,VisualTreePath,ScreenX,ScreenY,KeyCombination,Properties,Method,URL,StatusCode,Duration,CorrelationId");
 
             foreach (var entry in entries)
             {
@@ -33,17 +33,29 @@ namespace WpfEventRecorder.Services
                 var oldValue = EscapeCsv(entry.UIInfo?.OldValue ?? "");
                 var newValue = EscapeCsv(entry.UIInfo?.NewValue ?? "");
                 var windowTitle = EscapeCsv(entry.UIInfo?.WindowTitle ?? "");
+                var visualTreePath = EscapeCsv(entry.UIInfo?.VisualTreePath ?? "");
+                var screenX = entry.UIInfo?.ScreenPosition?.X.ToString() ?? "";
+                var screenY = entry.UIInfo?.ScreenPosition?.Y.ToString() ?? "";
                 var keyCombination = EscapeCsv(entry.UIInfo?.KeyCombination ?? "");
+                var properties = EscapeCsv(FormatProperties(entry.UIInfo?.Properties));
                 var method = EscapeCsv(entry.ApiInfo?.Method ?? "");
                 var url = EscapeCsv(entry.ApiInfo?.Url ?? "");
                 var statusCode = entry.ApiInfo?.StatusCode?.ToString() ?? "";
                 var duration = entry.DurationMs?.ToString() ?? "";
                 var correlationId = EscapeCsv(entry.CorrelationId ?? "");
 
-                sb.AppendLine($"{timestamp},{type},{controlType},{controlName},{automationId},{text},{oldValue},{newValue},{windowTitle},{keyCombination},{method},{url},{statusCode},{duration},{correlationId}");
+                sb.AppendLine($"{timestamp},{type},{controlType},{controlName},{automationId},{text},{oldValue},{newValue},{windowTitle},{visualTreePath},{screenX},{screenY},{keyCombination},{properties},{method},{url},{statusCode},{duration},{correlationId}");
             }
 
             File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+        }
+
+        private static string FormatProperties(Dictionary<string, string>? properties)
+        {
+            if (properties == null || properties.Count == 0)
+                return "";
+
+            return string.Join("; ", properties.Select(p => $"{p.Key}={p.Value}"));
         }
 
         /// <summary>
@@ -76,9 +88,9 @@ namespace WpfEventRecorder.Services
 
             // Worksheet
             sb.AppendLine("  <Worksheet ss:Name=\"Recorded Events\">");
-            sb.AppendLine($"    <Table ss:ExpandedColumnCount=\"15\" ss:ExpandedRowCount=\"{entryList.Count + 1}\">");
+            sb.AppendLine($"    <Table ss:ExpandedColumnCount=\"19\" ss:ExpandedRowCount=\"{entryList.Count + 1}\">");
 
-            // Column widths
+            // Column widths - includes new columns
             sb.AppendLine("      <Column ss:Width=\"140\"/>"); // Timestamp
             sb.AppendLine("      <Column ss:Width=\"80\"/>");  // Type
             sb.AppendLine("      <Column ss:Width=\"80\"/>");  // ControlType
@@ -88,7 +100,11 @@ namespace WpfEventRecorder.Services
             sb.AppendLine("      <Column ss:Width=\"100\"/>"); // OldValue
             sb.AppendLine("      <Column ss:Width=\"100\"/>"); // NewValue
             sb.AppendLine("      <Column ss:Width=\"150\"/>"); // WindowTitle
+            sb.AppendLine("      <Column ss:Width=\"300\"/>"); // VisualTreePath
+            sb.AppendLine("      <Column ss:Width=\"60\"/>");  // ScreenX
+            sb.AppendLine("      <Column ss:Width=\"60\"/>");  // ScreenY
             sb.AppendLine("      <Column ss:Width=\"100\"/>"); // KeyCombination
+            sb.AppendLine("      <Column ss:Width=\"300\"/>"); // Properties
             sb.AppendLine("      <Column ss:Width=\"60\"/>");  // Method
             sb.AppendLine("      <Column ss:Width=\"200\"/>"); // URL
             sb.AppendLine("      <Column ss:Width=\"60\"/>");  // StatusCode
@@ -106,7 +122,11 @@ namespace WpfEventRecorder.Services
             WriteExcelCell(sb, "OldValue", "Header");
             WriteExcelCell(sb, "NewValue", "Header");
             WriteExcelCell(sb, "WindowTitle", "Header");
+            WriteExcelCell(sb, "VisualTreePath", "Header");
+            WriteExcelCell(sb, "ScreenX", "Header");
+            WriteExcelCell(sb, "ScreenY", "Header");
             WriteExcelCell(sb, "KeyCombination", "Header");
+            WriteExcelCell(sb, "Properties", "Header");
             WriteExcelCell(sb, "Method", "Header");
             WriteExcelCell(sb, "URL", "Header");
             WriteExcelCell(sb, "StatusCode", "Header");
@@ -130,7 +150,11 @@ namespace WpfEventRecorder.Services
                 WriteExcelCell(sb, entry.UIInfo?.OldValue ?? "", style);
                 WriteExcelCell(sb, entry.UIInfo?.NewValue ?? "", style);
                 WriteExcelCell(sb, entry.UIInfo?.WindowTitle ?? "", style);
+                WriteExcelCell(sb, entry.UIInfo?.VisualTreePath ?? "", style);
+                WriteExcelCell(sb, entry.UIInfo?.ScreenPosition?.X.ToString() ?? "", style, isNumber: true);
+                WriteExcelCell(sb, entry.UIInfo?.ScreenPosition?.Y.ToString() ?? "", style, isNumber: true);
                 WriteExcelCell(sb, entry.UIInfo?.KeyCombination ?? "", style);
+                WriteExcelCell(sb, FormatProperties(entry.UIInfo?.Properties), style);
                 WriteExcelCell(sb, entry.ApiInfo?.Method ?? "", style);
                 WriteExcelCell(sb, entry.ApiInfo?.Url ?? "", style);
                 WriteExcelCell(sb, entry.ApiInfo?.StatusCode?.ToString() ?? "", style, isNumber: true);

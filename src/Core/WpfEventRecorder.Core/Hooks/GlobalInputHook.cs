@@ -240,7 +240,36 @@ public class GlobalInputHook : IDisposable
             IsEnabled = elementInfo.IsEnabled,
             IsSelected = elementInfo.IsSelected,
             SelectionItemText = elementInfo.SelectionItemText,
-            ToggleState = elementInfo.ToggleState
+            ToggleState = elementInfo.ToggleState,
+
+            // Additional properties
+            LocalizedControlType = elementInfo.LocalizedControlType,
+            HelpText = elementInfo.HelpText,
+            AcceleratorKey = elementInfo.AcceleratorKey,
+            AccessKey = elementInfo.AccessKey,
+            IsPassword = elementInfo.IsPassword,
+            IsReadOnly = elementInfo.IsReadOnly,
+            IsRequired = elementInfo.IsRequired,
+            IsKeyboardFocusable = elementInfo.IsKeyboardFocusable,
+            HasKeyboardFocus = elementInfo.HasKeyboardFocus,
+            ItemType = elementInfo.ItemType,
+            ItemStatus = elementInfo.ItemStatus,
+            BoundingRectangle = elementInfo.BoundingRectangle,
+            ProcessId = elementInfo.ProcessId,
+
+            // Range value properties
+            RangeValue = elementInfo.RangeValue,
+            RangeMinimum = elementInfo.RangeMinimum,
+            RangeMaximum = elementInfo.RangeMaximum,
+
+            // Grid properties
+            RowCount = elementInfo.RowCount,
+            ColumnCount = elementInfo.ColumnCount,
+            RowIndex = elementInfo.RowIndex,
+            ColumnIndex = elementInfo.ColumnIndex,
+
+            // Visual tree path
+            VisualTreePath = elementInfo.VisualTreePath
         };
 
         MouseClick?.Invoke(this, args);
@@ -339,6 +368,7 @@ public class GlobalInputHook : IDisposable
             var element = AutomationElement.FromPoint(new System.Windows.Point(point.X, point.Y));
             if (element != null)
             {
+                // Basic properties
                 info.ControlType = element.Current.ControlType.ProgrammaticName.Replace("ControlType.", "");
                 info.ControlName = element.Current.Name;
                 info.AutomationId = element.Current.AutomationId;
@@ -346,11 +376,26 @@ public class GlobalInputHook : IDisposable
                 info.FrameworkId = element.Current.FrameworkId;
                 info.IsEnabled = element.Current.IsEnabled;
 
+                // Additional standard properties
+                info.LocalizedControlType = element.Current.LocalizedControlType;
+                info.HelpText = element.Current.HelpText;
+                info.AcceleratorKey = element.Current.AcceleratorKey;
+                info.AccessKey = element.Current.AccessKey;
+                info.IsPassword = element.Current.IsPassword;
+                info.IsKeyboardFocusable = element.Current.IsKeyboardFocusable;
+                info.HasKeyboardFocus = element.Current.HasKeyboardFocus;
+                info.ItemType = element.Current.ItemType;
+                info.ItemStatus = element.Current.ItemStatus;
+                info.BoundingRectangle = element.Current.BoundingRectangle;
+                info.ProcessId = element.Current.ProcessId;
+
                 // Try to get text value from ValuePattern
                 if (element.TryGetCurrentPattern(ValuePattern.Pattern, out object? valuePattern))
                 {
-                    info.Value = ((ValuePattern)valuePattern).Current.Value;
+                    var vp = (ValuePattern)valuePattern;
+                    info.Value = vp.Current.Value;
                     info.Text = info.Value;
+                    info.IsReadOnly = vp.Current.IsReadOnly;
                 }
                 else
                 {
@@ -384,6 +429,43 @@ public class GlobalInputHook : IDisposable
                     }
                 }
 
+                // Try to get RangeValue info (for sliders, progress bars, spinners)
+                if (element.TryGetCurrentPattern(RangeValuePattern.Pattern, out object? rangeValuePattern))
+                {
+                    var rvp = (RangeValuePattern)rangeValuePattern;
+                    info.RangeValue = rvp.Current.Value;
+                    info.RangeMinimum = rvp.Current.Minimum;
+                    info.RangeMaximum = rvp.Current.Maximum;
+                    info.IsReadOnly = rvp.Current.IsReadOnly;
+                }
+
+                // Try to get Grid info (for data grids, tables)
+                if (element.TryGetCurrentPattern(GridPattern.Pattern, out object? gridPattern))
+                {
+                    var gp = (GridPattern)gridPattern;
+                    info.RowCount = gp.Current.RowCount;
+                    info.ColumnCount = gp.Current.ColumnCount;
+                }
+
+                // Try to get GridItem info (for cells in a grid)
+                if (element.TryGetCurrentPattern(GridItemPattern.Pattern, out object? gridItemPattern))
+                {
+                    var gip = (GridItemPattern)gridItemPattern;
+                    info.RowIndex = gip.Current.Row;
+                    info.ColumnIndex = gip.Current.Column;
+                }
+
+                // Try to get TableItem info
+                if (element.TryGetCurrentPattern(TableItemPattern.Pattern, out object? tableItemPattern))
+                {
+                    var tip = (TableItemPattern)tableItemPattern;
+                    info.RowIndex = tip.Current.Row;
+                    info.ColumnIndex = tip.Current.Column;
+                }
+
+                // Build visual tree path
+                info.VisualTreePath = BuildVisualTreePath(element);
+
                 // Get window title
                 var window = GetParentWindow(element);
                 if (window != null)
@@ -398,6 +480,44 @@ public class GlobalInputHook : IDisposable
         }
 
         return info;
+    }
+
+    private string BuildVisualTreePath(AutomationElement element)
+    {
+        var path = new System.Collections.Generic.List<string>();
+        try
+        {
+            var walker = TreeWalker.ControlViewWalker;
+            var current = element;
+
+            while (current != null && current.Current.ControlType != ControlType.Window)
+            {
+                var identifier = !string.IsNullOrEmpty(current.Current.AutomationId)
+                    ? $"#{current.Current.AutomationId}"
+                    : !string.IsNullOrEmpty(current.Current.Name)
+                        ? $"\"{current.Current.Name}\""
+                        : "";
+
+                var typeName = current.Current.ControlType.ProgrammaticName.Replace("ControlType.", "");
+                path.Insert(0, string.IsNullOrEmpty(identifier) ? typeName : $"{typeName}{identifier}");
+
+                current = walker.GetParent(current);
+            }
+
+            if (current != null && current.Current.ControlType == ControlType.Window)
+            {
+                var windowName = !string.IsNullOrEmpty(current.Current.Name)
+                    ? $"Window\"{current.Current.Name}\""
+                    : "Window";
+                path.Insert(0, windowName);
+            }
+        }
+        catch
+        {
+            // Ignore errors building path
+        }
+
+        return string.Join(" > ", path);
     }
 
     private ElementInfo GetFocusedElementInfo()
@@ -494,6 +614,35 @@ public class GlobalInputHook : IDisposable
         public bool IsSelected { get; set; }
         public string? SelectionItemText { get; set; }
         public string? ToggleState { get; set; }
+
+        // Additional properties for detailed control info
+        public string? LocalizedControlType { get; set; }
+        public string? HelpText { get; set; }
+        public string? AcceleratorKey { get; set; }
+        public string? AccessKey { get; set; }
+        public bool IsPassword { get; set; }
+        public bool IsReadOnly { get; set; }
+        public bool IsRequired { get; set; }
+        public bool IsKeyboardFocusable { get; set; }
+        public bool HasKeyboardFocus { get; set; }
+        public string? ItemType { get; set; }
+        public string? ItemStatus { get; set; }
+        public System.Windows.Rect? BoundingRectangle { get; set; }
+        public int? ProcessId { get; set; }
+
+        // For RangeValue controls (sliders, progress bars, etc.)
+        public double? RangeValue { get; set; }
+        public double? RangeMinimum { get; set; }
+        public double? RangeMaximum { get; set; }
+
+        // For Grid/Table controls
+        public int? RowCount { get; set; }
+        public int? ColumnCount { get; set; }
+        public int? RowIndex { get; set; }
+        public int? ColumnIndex { get; set; }
+
+        // Visual tree path
+        public string? VisualTreePath { get; set; }
     }
 }
 
@@ -518,6 +667,35 @@ public class MouseClickEventArgs : EventArgs
     public bool IsSelected { get; set; }
     public string? SelectionItemText { get; set; }
     public string? ToggleState { get; set; }
+
+    // Additional properties for detailed control info
+    public string? LocalizedControlType { get; set; }
+    public string? HelpText { get; set; }
+    public string? AcceleratorKey { get; set; }
+    public string? AccessKey { get; set; }
+    public bool IsPassword { get; set; }
+    public bool IsReadOnly { get; set; }
+    public bool IsRequired { get; set; }
+    public bool IsKeyboardFocusable { get; set; }
+    public bool HasKeyboardFocus { get; set; }
+    public string? ItemType { get; set; }
+    public string? ItemStatus { get; set; }
+    public System.Windows.Rect? BoundingRectangle { get; set; }
+    public int? ProcessId { get; set; }
+
+    // For RangeValue controls (sliders, progress bars, etc.)
+    public double? RangeValue { get; set; }
+    public double? RangeMinimum { get; set; }
+    public double? RangeMaximum { get; set; }
+
+    // For Grid/Table controls
+    public int? RowCount { get; set; }
+    public int? ColumnCount { get; set; }
+    public int? RowIndex { get; set; }
+    public int? ColumnIndex { get; set; }
+
+    // Visual tree path
+    public string? VisualTreePath { get; set; }
 }
 
 /// <summary>

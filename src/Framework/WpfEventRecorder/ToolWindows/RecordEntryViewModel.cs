@@ -187,13 +187,57 @@ namespace WpfEventRecorder.ToolWindows
                 if (_entry.UIInfo != null)
                 {
                     var ui = _entry.UIInfo;
-                    return $"Control: {ui.ControlType}\n" +
-                           $"Name: {ui.ControlName ?? "(none)"}\n" +
-                           $"AutomationId: {ui.AutomationId ?? "(none)"}\n" +
-                           $"Text: {ui.Text ?? "(none)"}\n" +
-                           $"Window: {ui.WindowTitle ?? "(none)"}\n" +
-                           $"Old Value: {ui.OldValue ?? "(none)"}\n" +
-                           $"New Value: {ui.NewValue ?? "(none)"}";
+                    var sb = new System.Text.StringBuilder();
+
+                    // Basic control information
+                    sb.AppendLine("=== Control Information ===");
+                    sb.AppendLine($"Control Type: {ui.ControlType}");
+                    sb.AppendLine($"Name: {ui.ControlName ?? "(none)"}");
+                    sb.AppendLine($"AutomationId: {ui.AutomationId ?? "(none)"}");
+                    sb.AppendLine($"Text: {ui.Text ?? "(none)"}");
+
+                    // Values
+                    if (!string.IsNullOrEmpty(ui.OldValue) || !string.IsNullOrEmpty(ui.NewValue))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine("=== Values ===");
+                        if (!string.IsNullOrEmpty(ui.OldValue))
+                            sb.AppendLine($"Old Value: {ui.OldValue}");
+                        if (!string.IsNullOrEmpty(ui.NewValue))
+                            sb.AppendLine($"New Value: {ui.NewValue}");
+                    }
+
+                    // Window information
+                    sb.AppendLine();
+                    sb.AppendLine("=== Window ===");
+                    sb.AppendLine($"Title: {ui.WindowTitle ?? "(none)"}");
+
+                    // Position
+                    if (ui.ScreenPosition != null)
+                    {
+                        sb.AppendLine($"Click Position: ({ui.ScreenPosition.X}, {ui.ScreenPosition.Y})");
+                    }
+
+                    // Visual tree path
+                    if (!string.IsNullOrEmpty(ui.VisualTreePath))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine("=== Visual Tree Path ===");
+                        sb.AppendLine(ui.VisualTreePath);
+                    }
+
+                    // Additional properties
+                    if (ui.Properties != null && ui.Properties.Count > 0)
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine("=== Additional Properties ===");
+                        foreach (var prop in ui.Properties)
+                        {
+                            sb.AppendLine($"{prop.Key}: {prop.Value}");
+                        }
+                    }
+
+                    return sb.ToString().TrimEnd();
                 }
 
                 if (_entry.ApiInfo != null)

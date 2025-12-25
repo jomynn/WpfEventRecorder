@@ -260,6 +260,8 @@ namespace WpfEventRecorder.Core.Hooks
             var entryType = e.IsDoubleClick ? RecordEntryType.UIDoubleClick : RecordEntryType.UIClick;
 
             var properties = new Dictionary<string, string>();
+
+            // Basic properties
             if (!string.IsNullOrEmpty(e.ClassName))
                 properties["ClassName"] = e.ClassName;
             if (!string.IsNullOrEmpty(e.FrameworkId))
@@ -273,6 +275,59 @@ namespace WpfEventRecorder.Core.Hooks
             if (!e.IsEnabled)
                 properties["IsEnabled"] = "false";
 
+            // Additional properties
+            if (!string.IsNullOrEmpty(e.LocalizedControlType))
+                properties["LocalizedControlType"] = e.LocalizedControlType;
+            if (!string.IsNullOrEmpty(e.HelpText))
+                properties["HelpText"] = e.HelpText;
+            if (!string.IsNullOrEmpty(e.AcceleratorKey))
+                properties["AcceleratorKey"] = e.AcceleratorKey;
+            if (!string.IsNullOrEmpty(e.AccessKey))
+                properties["AccessKey"] = e.AccessKey;
+            if (e.IsPassword)
+                properties["IsPassword"] = "true";
+            if (e.IsReadOnly)
+                properties["IsReadOnly"] = "true";
+            if (e.IsRequired)
+                properties["IsRequired"] = "true";
+            if (e.IsKeyboardFocusable)
+                properties["IsKeyboardFocusable"] = "true";
+            if (e.HasKeyboardFocus)
+                properties["HasKeyboardFocus"] = "true";
+            if (!string.IsNullOrEmpty(e.ItemType))
+                properties["ItemType"] = e.ItemType;
+            if (!string.IsNullOrEmpty(e.ItemStatus))
+                properties["ItemStatus"] = e.ItemStatus;
+            if (e.ProcessId.HasValue)
+                properties["ProcessId"] = e.ProcessId.Value.ToString();
+
+            // Bounding rectangle
+            if (e.BoundingRectangle.HasValue)
+            {
+                var rect = e.BoundingRectangle.Value;
+                properties["BoundingRect"] = $"{rect.X},{rect.Y},{rect.Width},{rect.Height}";
+            }
+
+            // Range value properties (for sliders, progress bars)
+            if (e.RangeValue.HasValue)
+            {
+                properties["RangeValue"] = e.RangeValue.Value.ToString("F2");
+                if (e.RangeMinimum.HasValue)
+                    properties["RangeMinimum"] = e.RangeMinimum.Value.ToString("F2");
+                if (e.RangeMaximum.HasValue)
+                    properties["RangeMaximum"] = e.RangeMaximum.Value.ToString("F2");
+            }
+
+            // Grid properties (for data grids, tables)
+            if (e.RowCount.HasValue)
+                properties["RowCount"] = e.RowCount.Value.ToString();
+            if (e.ColumnCount.HasValue)
+                properties["ColumnCount"] = e.ColumnCount.Value.ToString();
+            if (e.RowIndex.HasValue)
+                properties["RowIndex"] = e.RowIndex.Value.ToString();
+            if (e.ColumnIndex.HasValue)
+                properties["ColumnIndex"] = e.ColumnIndex.Value.ToString();
+
             var entry = new RecordEntry
             {
                 EntryType = entryType,
@@ -285,6 +340,7 @@ namespace WpfEventRecorder.Core.Hooks
                     NewValue = e.Value,
                     WindowTitle = e.WindowTitle,
                     ScreenPosition = new ScreenPoint { X = e.X, Y = e.Y },
+                    VisualTreePath = e.VisualTreePath,
                     Properties = properties.Count > 0 ? properties : null
                 }
             };
