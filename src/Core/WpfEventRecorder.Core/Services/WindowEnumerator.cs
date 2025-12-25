@@ -181,9 +181,10 @@ public static class WindowEnumerator
         var className = classNameBuilder.ToString();
 
         // WPF windows typically have "HwndWrapper" in their class name
-        // or use "Window" class from WPF
+        // Some WPF apps use class names starting with "WPF" or contain "Wpf"
         return className.Contains("HwndWrapper") ||
-               className.StartsWith("WPF", StringComparison.OrdinalIgnoreCase);
+               className.StartsWith("WPF", StringComparison.OrdinalIgnoreCase) ||
+               className.Contains("Wpf", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

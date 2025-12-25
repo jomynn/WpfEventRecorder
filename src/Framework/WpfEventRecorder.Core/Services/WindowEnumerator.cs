@@ -176,9 +176,10 @@ namespace WpfEventRecorder.Core.Services
             var className = classNameBuilder.ToString();
 
             // WPF windows typically have "HwndWrapper" in their class name
-            // or use "Window" class from WPF
+            // Some WPF apps use class names starting with "WPF" or contain "Wpf"
             return className.Contains("HwndWrapper") ||
-                   className.StartsWith("WPF", StringComparison.OrdinalIgnoreCase);
+                   className.StartsWith("WPF", StringComparison.OrdinalIgnoreCase) ||
+                   className.IndexOf("Wpf", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
