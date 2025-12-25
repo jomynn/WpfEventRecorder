@@ -13,6 +13,7 @@ namespace WpfEventRecorder.Core.Hooks
     {
         private readonly Subject<RecordEntry> _eventSubject = new Subject<RecordEntry>();
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
+        private GlobalInputHook? _globalInputHook;
         private bool _isActive;
         private bool _disposed;
         private WindowInfo? _targetWindow;
@@ -239,12 +240,74 @@ namespace WpfEventRecorder.Core.Hooks
 
         private void AttachHooks()
         {
-            // Platform-specific hook implementation would go here
-            // For WPF, this would use InputManager or similar mechanisms
+            // Create and start the global input hook
+            _globalInputHook = new GlobalInputHook();
+
+            // Subscribe to mouse click events
+            _globalInputHook.MouseClick += OnMouseClick;
+
+            // Subscribe to keyboard events
+            _globalInputHook.KeyPress += OnKeyPress;
+
+            // Start the hooks
+            _globalInputHook.Start(_targetWindow);
+        }
+
+        private void OnMouseClick(object? sender, MouseClickEventArgs e)
+        {
+            if (!_isActive) return;
+
+            var entryType = e.IsDoubleClick ? RecordEntryType.UIDoubleClick : RecordEntryType.UIClick;
+
+            var entry = new RecordEntry
+            {
+                EntryType = entryType,
+                UIInfo = new UIInfo
+                {
+                    ControlType = e.ControlType,
+                    ControlName = e.ControlName,
+                    AutomationId = e.AutomationId,
+                    Text = e.Text,
+                    WindowTitle = e.WindowTitle,
+                    ScreenPosition = new ScreenPoint { X = e.X, Y = e.Y }
+                }
+            };
+
+            _eventSubject.OnNext(entry);
+        }
+
+        private void OnKeyPress(object? sender, KeyboardEventArgs e)
+        {
+            if (!_isActive) return;
+
+            // Record keyboard events
+            var entry = new RecordEntry
+            {
+                EntryType = RecordEntryType.UIKeyboardShortcut,
+                UIInfo = new UIInfo
+                {
+                    ControlType = e.ControlType,
+                    ControlName = e.ControlName,
+                    AutomationId = e.AutomationId,
+                    KeyCombination = e.KeyCombination,
+                    WindowTitle = e.WindowTitle
+                }
+            };
+
+            _eventSubject.OnNext(entry);
         }
 
         private void DetachHooks()
         {
+            if (_globalInputHook != null)
+            {
+                _globalInputHook.MouseClick -= OnMouseClick;
+                _globalInputHook.KeyPress -= OnKeyPress;
+                _globalInputHook.Stop();
+                _globalInputHook.Dispose();
+                _globalInputHook = null;
+            }
+
             foreach (var sub in _subscriptions)
             {
                 sub.Dispose();

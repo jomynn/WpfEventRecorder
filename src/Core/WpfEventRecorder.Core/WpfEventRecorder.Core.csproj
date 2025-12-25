@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RootNamespace>WpfEventRecorder.Core</RootNamespace>
     <AssemblyName>WpfEventRecorder.Core</AssemblyName>
