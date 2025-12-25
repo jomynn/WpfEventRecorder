@@ -100,6 +100,11 @@ namespace WpfEventRecorder.Core.Hooks
         private const int DoubleClickTimeMs = 500;
         private const int DoubleClickDistancePixels = 4;
 
+        // Keyboard deduplication fields
+        private uint _lastKeyCode;
+        private DateTime _lastKeyTime = DateTime.MinValue;
+        private const int KeyRepeatThresholdMs = 50; // Ignore repeated key events within this window
+
         /// <summary>
         /// Event raised when a mouse click is detected
         /// </summary>
@@ -279,6 +284,17 @@ namespace WpfEventRecorder.Core.Hooks
                         return;
                 }
             }
+
+            // Deduplicate repeated key events (when key is held down)
+            var now = DateTime.Now;
+            if (hookStruct.vkCode == _lastKeyCode &&
+                (now - _lastKeyTime).TotalMilliseconds < KeyRepeatThresholdMs)
+            {
+                // This is a repeated key event, ignore it
+                return;
+            }
+            _lastKeyCode = hookStruct.vkCode;
+            _lastKeyTime = now;
 
             var key = (Keys)hookStruct.vkCode;
             var keyName = key.ToString();
