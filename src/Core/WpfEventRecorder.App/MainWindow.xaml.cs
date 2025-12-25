@@ -597,7 +597,7 @@ public partial class MainWindow : Window
         _selectedNodeProperties.Clear();
         PropertyHeader.Text = "Select an element from Visual Tree";
 
-        if (_selectedWindow == null || _selectedWindow.Handle == IntPtr.Zero)
+        if (_selectedWindow == null || _selectedWindow.WindowHandle == IntPtr.Zero)
         {
             MessageBox.Show("No target window selected. Start recording first to select a window.",
                             "Visual Tree",
@@ -608,7 +608,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var rootNode = LiveTreeService.BuildVisualTree(_selectedWindow.Handle);
+            var rootNode = LiveTreeService.BuildVisualTree(_selectedWindow.WindowHandle);
             if (rootNode != null)
             {
                 _visualTreeRoot.Add(rootNode);
