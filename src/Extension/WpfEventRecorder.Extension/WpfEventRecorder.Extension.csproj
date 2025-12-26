@@ -40,9 +40,9 @@
 
   <ItemGroup>
     <Resource Include="Resources\Icons\*.png" />
-    <Page Include="Resources\Styles.xaml" />
-    <Page Include="Resources\VSTheme.xaml" />
-    <Page Include="ToolWindows\RecordingDashboardControl.xaml" />
+    <Page Update="Resources\Styles.xaml" />
+    <Page Update="Resources\VSTheme.xaml" />
+    <Page Update="ToolWindows\RecordingDashboardControl.xaml" />
   </ItemGroup>
 
   <ItemGroup>
