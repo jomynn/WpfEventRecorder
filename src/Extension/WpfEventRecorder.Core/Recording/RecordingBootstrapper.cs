@@ -73,11 +73,14 @@ public static class RecordingBootstrapper
 
         // Hook into application events
         application.Activated += (_, _) => InstrumentActiveWindows();
-        application.MainWindow?.Loaded += (_, _) =>
+        if (application.MainWindow != null)
         {
-            if (application.MainWindow != null)
-                _instrumenter.InstrumentWindow(application.MainWindow);
-        };
+            application.MainWindow.Loaded += (_, _) =>
+            {
+                if (application.MainWindow != null)
+                    _instrumenter.InstrumentWindow(application.MainWindow);
+            };
+        }
 
         // Instrument existing windows
         foreach (Window window in application.Windows)
