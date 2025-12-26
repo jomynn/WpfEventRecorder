@@ -1,0 +1,103 @@
+<Window x:Class="WpfEventRecorder.SampleApp.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:WpfEventRecorder.SampleApp.ViewModels"
+        xmlns:views="clr-namespace:WpfEventRecorder.SampleApp.Views"
+        mc:Ignorable="d"
+        Title="WPF Event Recorder - Sample App"
+        Height="600" Width="900"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:CustomerListViewModel}">
+            <views:CustomerListView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:OrderListViewModel}">
+            <views:OrderListView />
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#2196F3" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="WPF Event Recorder"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="Sample Application"
+                               FontSize="14"
+                               Foreground="#E3F2FD"
+                               VerticalAlignment="Center"
+                               Margin="16,0,0,0" />
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Command="{Binding RefreshCommand}"
+                        Content="Refresh"
+                        Padding="16,8"
+                        Background="White"
+                        Foreground="#2196F3"
+                        BorderThickness="0"
+                        Cursor="Hand" />
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Navigation Panel -->
+            <Border Grid.Column="0" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="0,0,1,0">
+                <StackPanel Margin="0,16,0,0">
+                    <RadioButton Content="Customers"
+                                 GroupName="Navigation"
+                                 IsChecked="{Binding CurrentView, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Customers, Mode=OneWay}"
+                                 Command="{Binding NavigateToCustomersCommand}"
+                                 Style="{StaticResource NavButtonStyle}" />
+
+                    <RadioButton Content="Orders"
+                                 GroupName="Navigation"
+                                 IsChecked="{Binding CurrentView, Converter={StaticResource StringToBoolConverter}, ConverterParameter=Orders, Mode=OneWay}"
+                                 Command="{Binding NavigateToOrdersCommand}"
+                                 Style="{StaticResource NavButtonStyle}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Content Area -->
+            <ContentControl Grid.Column="1"
+                            Content="{Binding CurrentViewModel}"
+                            Margin="16" />
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="16,8" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Ellipse Width="8" Height="8" Fill="#4CAF50" Margin="0,0,8,0" />
+                <TextBlock Text="Recording Active" Foreground="#666666" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

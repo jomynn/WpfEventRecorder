@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
+  <Include href="KnownImageIds.vsct"/>
+
+  <Commands package="guidWpfEventRecorderPackage">
+    <Groups>
+      <Group guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+      </Group>
+      <Group guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbarGroup" priority="0x0000">
+        <Parent guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbar"/>
+      </Group>
+    </Groups>
+
+    <Menus>
+      <Menu guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderMenu" priority="0x0100" type="Menu">
+        <Parent guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderMenuGroup"/>
+        <Strings>
+          <ButtonText>WPF Event Recorder</ButtonText>
+        </Strings>
+      </Menu>
+      <Menu guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbar" type="Toolbar">
+        <CommandFlag>DefaultDocked</CommandFlag>
+        <Strings>
+          <ButtonText>WPF Event Recorder</ButtonText>
+        </Strings>
+      </Menu>
+    </Menus>
+
+    <Buttons>
+      <Button guid="guidWpfEventRecorderCmdSet" id="cmdidStartRecording" priority="0x0100" type="Button">
+        <Parent guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbarGroup"/>
+        <Icon guid="ImageCatalogGuid" id="Run"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Start Recording</ButtonText>
+          <ToolTipText>Start recording WPF events</ToolTipText>
+        </Strings>
+      </Button>
+      <Button guid="guidWpfEventRecorderCmdSet" id="cmdidStopRecording" priority="0x0200" type="Button">
+        <Parent guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbarGroup"/>
+        <Icon guid="ImageCatalogGuid" id="Stop"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Stop Recording</ButtonText>
+          <ToolTipText>Stop recording WPF events</ToolTipText>
+        </Strings>
+      </Button>
+      <Button guid="guidWpfEventRecorderCmdSet" id="cmdidPauseRecording" priority="0x0300" type="Button">
+        <Parent guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbarGroup"/>
+        <Icon guid="ImageCatalogGuid" id="Pause"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Pause Recording</ButtonText>
+          <ToolTipText>Pause recording WPF events</ToolTipText>
+        </Strings>
+      </Button>
+      <Button guid="guidWpfEventRecorderCmdSet" id="cmdidExportRecording" priority="0x0400" type="Button">
+        <Parent guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbarGroup"/>
+        <Icon guid="ImageCatalogGuid" id="ExportFile"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Export Recording</ButtonText>
+          <ToolTipText>Export recorded events</ToolTipText>
+        </Strings>
+      </Button>
+      <Button guid="guidWpfEventRecorderCmdSet" id="cmdidClearRecording" priority="0x0500" type="Button">
+        <Parent guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbarGroup"/>
+        <Icon guid="ImageCatalogGuid" id="ClearWindowContent"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Clear Recording</ButtonText>
+          <ToolTipText>Clear all recorded events</ToolTipText>
+        </Strings>
+      </Button>
+      <Button guid="guidWpfEventRecorderCmdSet" id="cmdidOpenDashboard" priority="0x0600" type="Button">
+        <Parent guid="guidWpfEventRecorderCmdSet" id="WpfEventRecorderToolbarGroup"/>
+        <Icon guid="ImageCatalogGuid" id="PerformanceReport"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Recording Dashboard</ButtonText>
+          <ToolTipText>Open the recording dashboard</ToolTipText>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <KeyBindings>
+    <KeyBinding guid="guidWpfEventRecorderCmdSet" id="cmdidStartRecording" editor="guidVSStd97" key1="R" mod1="Control Alt" key2="S"/>
+    <KeyBinding guid="guidWpfEventRecorderCmdSet" id="cmdidStopRecording" editor="guidVSStd97" key1="R" mod1="Control Alt" key2="X"/>
+    <KeyBinding guid="guidWpfEventRecorderCmdSet" id="cmdidPauseRecording" editor="guidVSStd97" key1="R" mod1="Control Alt" key2="P"/>
+    <KeyBinding guid="guidWpfEventRecorderCmdSet" id="cmdidOpenDashboard" editor="guidVSStd97" key1="R" mod1="Control Alt" key2="D"/>
+  </KeyBindings>
+
+  <Symbols>
+    <GuidSymbol name="guidWpfEventRecorderPackage" value="{a1b2c3d4-e5f6-7890-abcd-ef1234567890}" />
+
+    <GuidSymbol name="guidWpfEventRecorderCmdSet" value="{b2c3d4e5-f6a7-8901-bcde-f12345678901}">
+      <IDSymbol name="WpfEventRecorderMenuGroup" value="0x1020" />
+      <IDSymbol name="WpfEventRecorderMenu" value="0x1021" />
+      <IDSymbol name="WpfEventRecorderToolbar" value="0x1000" />
+      <IDSymbol name="WpfEventRecorderToolbarGroup" value="0x1050" />
+      <IDSymbol name="cmdidStartRecording" value="0x0100" />
+      <IDSymbol name="cmdidStopRecording" value="0x0101" />
+      <IDSymbol name="cmdidPauseRecording" value="0x0102" />
+      <IDSymbol name="cmdidExportRecording" value="0x0103" />
+      <IDSymbol name="cmdidClearRecording" value="0x0104" />
+      <IDSymbol name="cmdidOpenDashboard" value="0x0105" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>
