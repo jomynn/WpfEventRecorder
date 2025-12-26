@@ -1,0 +1,164 @@
+<UserControl x:Class="WpfEventRecorder.Extension.ToolWindows.RecordingDashboardControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:WpfEventRecorder.Extension.ToolWindows"
+             xmlns:converters="clr-namespace:WpfEventRecorder.Extension.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             Background="{DynamicResource VsBrush.Window}"
+             Foreground="{DynamicResource VsBrush.WindowText}">
+
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
+        <converters:TimeSpanToStringConverter x:Key="TimeSpanToStringConverter" />
+
+        <Style TargetType="Button" x:Key="ToolbarButton">
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="MinWidth" Value="75" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <ToolBar Grid.Row="0" Background="Transparent">
+            <Button Command="{Binding StartRecordingCommand}"
+                    Style="{StaticResource ToolbarButton}"
+                    IsEnabled="{Binding CanStartRecording}">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="8" Height="8" Fill="Red" Margin="0,0,5,0" />
+                    <TextBlock Text="Start" />
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding StopRecordingCommand}"
+                    Style="{StaticResource ToolbarButton}"
+                    IsEnabled="{Binding CanStopRecording}">
+                <StackPanel Orientation="Horizontal">
+                    <Rectangle Width="8" Height="8" Fill="Gray" Margin="0,0,5,0" />
+                    <TextBlock Text="Stop" />
+                </StackPanel>
+            </Button>
+
+            <Button Command="{Binding PauseRecordingCommand}"
+                    Style="{StaticResource ToolbarButton}"
+                    IsEnabled="{Binding CanPauseRecording}"
+                    Content="{Binding PauseButtonText}" />
+
+            <Separator />
+
+            <Button Command="{Binding ClearCommand}"
+                    Style="{StaticResource ToolbarButton}"
+                    IsEnabled="{Binding HasEvents}"
+                    Content="Clear" />
+
+            <Button Command="{Binding ExportCommand}"
+                    Style="{StaticResource ToolbarButton}"
+                    IsEnabled="{Binding HasEvents}"
+                    Content="Export" />
+
+            <Separator />
+
+            <ComboBox ItemsSource="{Binding EventTypeFilters}"
+                      SelectedItem="{Binding SelectedEventTypeFilter}"
+                      Width="120"
+                      Margin="2" />
+        </ToolBar>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="1" Padding="8,4" Background="{DynamicResource VsBrush.CommandBarGradientBegin}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Ellipse Width="10" Height="10"
+                             Fill="{Binding StatusColor}"
+                             Margin="0,0,8,0" />
+                    <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="2"
+                           Text="{Binding Duration, Converter={StaticResource TimeSpanToStringConverter}}"
+                           Margin="16,0" />
+
+                <TextBlock Grid.Column="3">
+                    <Run Text="{Binding EventCount, Mode=OneWay}" />
+                    <Run Text=" events" />
+                </TextBlock>
+            </Grid>
+        </Border>
+
+        <!-- Event List -->
+        <DataGrid Grid.Row="2"
+                  ItemsSource="{Binding FilteredEvents}"
+                  SelectedItem="{Binding SelectedEvent}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  GridLinesVisibility="Horizontal"
+                  CanUserReorderColumns="True"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="True"
+                  Background="{DynamicResource VsBrush.Window}"
+                  Foreground="{DynamicResource VsBrush.WindowText}"
+                  BorderThickness="0">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="#" Binding="{Binding SequenceNumber}" Width="40" />
+
+                <DataGridTemplateColumn Header="Type" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="{Binding ColorIndicator}"
+                                    CornerRadius="3"
+                                    Padding="4,2"
+                                    HorizontalAlignment="Left">
+                                <TextBlock Text="{Binding EventType}"
+                                           Foreground="White"
+                                           FontSize="11" />
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="Time" Binding="{Binding TimeStamp}" Width="100" />
+                <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="150" />
+                <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Event Details Panel -->
+        <GridSplitter Grid.Row="2"
+                      Height="5"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Bottom"
+                      Background="{DynamicResource VsBrush.CommandBarGradientBegin}"
+                      Visibility="{Binding HasSelectedEvent, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+        <Border Grid.Row="3"
+                Padding="8"
+                Background="{DynamicResource VsBrush.CommandBarGradientBegin}"
+                MaxHeight="200"
+                Visibility="{Binding HasSelectedEvent, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock Text="{Binding SelectedEventDetails}"
+                           TextWrapping="Wrap"
+                           FontFamily="Consolas" />
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>
