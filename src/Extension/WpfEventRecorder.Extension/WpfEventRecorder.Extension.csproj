@@ -40,9 +40,13 @@
 
   <ItemGroup>
     <Resource Include="Resources\Icons\*.png" />
-    <Page Include="Resources\Styles.xaml" />
-    <Page Include="Resources\VSTheme.xaml" />
-    <Page Include="ToolWindows\RecordingDashboardControl.xaml" />
+    <!-- XAML files are automatically included as Page items by the SDK when UseWPF=true -->
+    <!-- Use Update instead of Include to avoid duplicates -->
+    <Page Update="Resources\Styles.xaml" />
+    <Page Update="Resources\VSTheme.xaml" />
+    <Page Update="ToolWindows\RecordingDashboardControl.xaml">
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>
