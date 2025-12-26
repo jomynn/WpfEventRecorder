@@ -1,18 +1,48 @@
 # WPF Event Recorder
 
+[![Visual Studio 2022](https://img.shields.io/badge/VS2022-17.0+-blue.svg)](https://visualstudio.microsoft.com/)
+[![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.7.2-purple.svg)](https://dotnet.microsoft.com/)
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-green.svg)](https://dotnet.microsoft.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
+
 A Visual Studio 2022 VSIX extension and library for recording WPF application interactions to support automation testing. Captures UI events, ViewModel property changes, and HTTP API calls with correlation tracking.
+
+## Quick Start
+
+```csharp
+// 1. Add reference to WpfEventRecorder.Core
+
+// 2. Initialize in App.xaml.cs
+protected override void OnStartup(StartupEventArgs e)
+{
+    base.OnStartup(e);
+    RecordingBootstrapper.Instance.Initialize(this);
+}
+
+// 3. Start recording
+WpfRecorder.Start("MySession");
+
+// 4. Use recording-enabled HttpClient
+var client = WpfRecorder.CreateHttpClient();
+
+// 5. Stop and save
+WpfRecorder.Stop();
+WpfRecorder.SaveToFile("recording.json");
+```
 
 ## Features
 
-- **UI Event Recording**: Captures clicks, text input, selections, toggles, keyboard shortcuts, and window events
-- **HTTP API Recording**: Intercepts and records HTTP requests/responses with full headers and body content
-- **ViewModel Property Tracking**: Records property changes via data binding paths
-- **Correlation Tracking**: Links UI actions to their resulting API calls
-- **Named Pipe IPC**: Real-time event streaming from target app to VS Tool Window
-- **Auto-Instrumentation**: Walk visual tree and attach handlers automatically
-- **Multiple Export Formats**: JSON, CSV, Excel, MSTest, NUnit, xUnit, and Playwright-style output
-- **Recording Attributes**: Mark ViewModels and properties for targeted recording
-- **Tool Window Dashboard**: Real-time event viewer with filtering and details panel
+| Feature | Description |
+|---------|-------------|
+| **UI Event Recording** | Captures clicks, text input, selections, toggles, keyboard shortcuts, window events |
+| **HTTP API Recording** | Intercepts HTTP requests/responses with headers and body content |
+| **ViewModel Tracking** | Records property changes via data binding paths |
+| **Visual Tree Inspector** | Browse and inspect element properties in real-time |
+| **Correlation Tracking** | Links UI actions to their resulting API calls |
+| **Named Pipe IPC** | Real-time event streaming from target app to VS Tool Window |
+| **Auto-Instrumentation** | Walks visual tree and attaches handlers automatically |
+| **Multiple Export Formats** | JSON, CSV, Excel, MSTest, NUnit, xUnit, Playwright |
+| **Recording Attributes** | Mark ViewModels and properties for targeted recording |
 
 ## Solution Structure
 
@@ -22,7 +52,16 @@ WpfEventRecorder/
 │   ├── Framework/                        # .NET Framework 4.7.2 Solution
 │   │   ├── WpfEventRecorder.Framework.sln
 │   │   ├── WpfEventRecorder/             # VSIX Extension for VS2022
+│   │   │   ├── Commands/                 # Menu commands
+│   │   │   ├── ToolWindows/              # Recording dashboard
+│   │   │   └── Services/                 # Project analyzer, code injection
 │   │   ├── WpfEventRecorder.Core/        # Core recording library
+│   │   │   ├── Attributes/               # Recording attributes
+│   │   │   ├── Hooks/                    # UI and HTTP hooks
+│   │   │   ├── Infrastructure/           # Bootstrapper, commands
+│   │   │   ├── Ipc/                      # Named pipe communication
+│   │   │   ├── Models/                   # Event models
+│   │   │   └── Services/                 # Recording hub
 │   │   ├── WpfEventRecorder.SampleApp/   # Sample WPF MVVM app
 │   │   └── WpfEventRecorder.Tests/       # Unit tests (xUnit)
 │   │
@@ -33,89 +72,96 @@ WpfEventRecorder/
 │       └── WpfEventRecorder.Tests/       # Unit tests (xUnit)
 │
 ├── docs/                                 # Documentation
+│   ├── Architecture.md
+│   ├── APIReference.md
+│   ├── DeveloperGuide.md
+│   ├── UserManual.md
+│   └── export-formats.md
+│
 └── README.md
 ```
 
-## Choosing a Solution
-
-| Solution | Target Framework | Use Case |
-|----------|------------------|----------|
-| **Framework** | .NET Framework 4.7.2 | VS2022 Extension (VSIX), legacy WPF apps |
-| **Core** | .NET 8 | Modern WPF apps, standalone recorder app |
-
 ## Installation
 
-### .NET Framework 4.7.2 (VSIX Extension)
+### Option 1: VSIX Extension (Visual Studio 2022)
 
-1. Open `src/Framework/WpfEventRecorder.Framework.sln` in Visual Studio 2022
-2. Build in Release mode
-3. Find `WpfEventRecorder.vsix` in the output folder
-4. Double-click to install in Visual Studio 2022
+```bash
+cd src/Framework
+dotnet build -c Release
+# Install the generated .vsix file
+```
 
-### .NET 8 (Standalone App)
+### Option 2: Standalone App (.NET 8)
 
-1. Open `src/Core/WpfEventRecorder.Core.sln` in Visual Studio 2022
-2. Build and run `WpfEventRecorder.App`
+```bash
+cd src/Core
+dotnet run --project WpfEventRecorder.App
+```
+
+### Option 3: NuGet Package (for integration)
+
+```bash
+# Coming soon
+dotnet add package WpfEventRecorder.Core
+```
 
 ## Usage
 
-### In Visual Studio (Framework Solution)
+### VSIX Extension
 
-1. Open a WPF solution
-2. Use the **WPF Event Recorder** toolbar or go to **Tools > WPF Event Recorder**
-3. Click **Start Recording** (or press `Ctrl+Alt+R`)
-4. Run and interact with your WPF application
-5. Click **Stop Recording** (or press `Ctrl+Alt+S`)
-6. Click **Save Recording** to export (JSON, CSV, Excel, or Test Code)
+| Action | Menu | Shortcut |
+|--------|------|----------|
+| Start Recording | Tools → WPF Event Recorder → Start | `Ctrl+Alt+R` |
+| Stop Recording | Tools → WPF Event Recorder → Stop | `Ctrl+Alt+S` |
+| Save Recording | Tools → WPF Event Recorder → Save | `Ctrl+Alt+E` |
+| Open Dashboard | Tools → WPF Event Recorder → Event Viewer | - |
 
-### Standalone App (Core Solution)
+### Standalone App
 
-1. Run `WpfEventRecorder.App`
-2. Select a target WPF window from the window picker
-3. Click **Start Recording**
+1. Launch `WpfEventRecorder.App`
+2. Click **Select Window** to choose a target WPF application
+3. Click **Start Recording** to begin capturing events
 4. Interact with the target application
-5. Click **Stop Recording**
-6. Click **Save** to export as JSON
+5. Click **Stop Recording** when finished
+6. Use **Save**, **CSV**, or **Excel** to export
 
-### Keyboard Shortcuts (VSIX)
+### Visual Tree Inspector
 
-| Action | Shortcut |
-|--------|----------|
-| Start Recording | `Ctrl+Alt+R` |
-| Stop Recording | `Ctrl+Alt+S` |
-| Save Recording | `Ctrl+Alt+E` |
+The Visual Tree panel allows you to:
+- Browse the element hierarchy of the target window
+- View element properties (Name, AutomationId, Type, Bindings)
+- Identify elements for UI automation scripts
 
 ## Integration Guide
 
-### Basic Integration
-
-Add a reference to `WpfEventRecorder.Core` and initialize recording:
+### Basic Setup
 
 ```csharp
 using WpfEventRecorder.Core;
 using WpfEventRecorder.Core.Infrastructure;
 
-// In App.xaml.cs OnStartup
-protected override async void OnStartup(StartupEventArgs e)
+public partial class App : Application
 {
-    base.OnStartup(e);
+    protected override async void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
 
-    // Initialize recording for this application
-    RecordingBootstrapper.Instance.Initialize(this);
+        // Initialize recording
+        RecordingBootstrapper.Instance.Initialize(this);
 
-    // Or connect to VSIX via Named Pipe
-    await RecordingBootstrapper.Instance.InitializeWithIpcAsync(this, sessionId);
+        // Or connect to VSIX via Named Pipe (for debugging)
+        // await RecordingBootstrapper.Instance.InitializeWithIpcAsync(this, sessionId);
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        RecordingBootstrapper.Instance.Dispose();
+        base.OnExit(e);
+    }
 }
-
-// Start/Stop recording programmatically
-WpfRecorder.Start("My Test Session");
-WpfRecorder.Stop();
-WpfRecorder.SaveToFile("recording.json");
 ```
 
-### Using Recording Attributes
-
-Decorate your ViewModels to enable automatic property change recording:
+### Recording Attributes
 
 ```csharp
 using WpfEventRecorder.Core.Attributes;
@@ -134,9 +180,7 @@ public class CustomerViewModel : INotifyPropertyChanged
 }
 ```
 
-### Using RecordingViewModelBase
-
-Inherit from the recording-enabled base class:
+### RecordingViewModelBase
 
 ```csharp
 using WpfEventRecorder.Core.Infrastructure;
@@ -153,9 +197,7 @@ public class MyViewModel : RecordingViewModelBase
 }
 ```
 
-### Using Recording Commands
-
-Wrap commands to record their execution:
+### Recording Commands
 
 ```csharp
 using WpfEventRecorder.Core.Infrastructure;
@@ -166,9 +208,8 @@ public class MyViewModel
 
     public MyViewModel()
     {
-        // Use RecordingCommand for automatic command recording
         SaveCommand = new RecordingCommand(
-            execute: SaveCustomer,
+            execute: _ => Save(),
             commandName: "SaveCommand",
             viewModelType: nameof(MyViewModel));
     }
@@ -177,126 +218,85 @@ public class MyViewModel
 
 ### Recording HTTP Calls
 
-Use the recording-enabled HttpClient:
-
 ```csharp
 using WpfEventRecorder.Core;
 
-// Option 1: Use the convenience method
+// All HTTP calls automatically recorded with correlation
 var httpClient = WpfRecorder.CreateHttpClient();
-
-// Option 2: Use RecordingBootstrapper
-var httpClient = RecordingBootstrapper.Instance.CreateRecordingHttpClient();
-
-// All HTTP calls are now automatically recorded with correlation
 var response = await httpClient.GetAsync("https://api.example.com/data");
 ```
 
 ## Export Formats
 
-### JSON Export
+| Format | Extension | Use Case |
+|--------|-----------|----------|
+| **JSON** | `.json` | Data exchange, playback, analysis |
+| **CSV** | `.csv` | Spreadsheet analysis |
+| **Excel** | `.xml` | Excel-compatible spreadsheet |
+| **MSTest** | `.cs` | Visual Studio MSTest unit tests |
+| **NUnit** | `.cs` | NUnit framework tests |
+| **xUnit** | `.cs` | xUnit framework tests |
+| **Playwright** | `.cs` | Playwright-style selectors |
 
-```json
-{
-  "sessionId": "guid",
-  "sessionName": "Test Session",
-  "startTime": "2024-01-15T10:30:00Z",
-  "endTime": "2024-01-15T10:35:00Z",
-  "entries": [...]
-}
-```
-
-### MSTest Export
+### Example: MSTest Export
 
 ```csharp
 [TestClass]
-public class RecordingTests
+public class CustomerFormTests
 {
     [TestMethod]
-    public async Task Test_Session_20240115_103000()
+    public async Task Test_CreateCustomer()
     {
         // Arrange
         var vm = new CustomerViewModel();
 
-        // Recorded inputs
-        // Text input: TextBox#txtName
-        // Binding: Text:Name
-        // vm.Name = "John Doe";
+        // Act - Recorded interactions
+        vm.Name = "John Doe";
+        vm.Email = "john@example.com";
+        vm.SaveCommand.Execute(null);
 
-        // Click: Button#btnSave
-        // vm.SaveCommand.Execute(null);
-
-        // API POST https://api.example.com/customers
         // Assert
+        // API POST https://api.example.com/customers -> 201 Created
     }
 }
 ```
 
-### NUnit Export
-
-```csharp
-[TestFixture]
-public class RecordingTests
-{
-    [Test]
-    public async Task Test_Session_20240115_103000()
-    {
-        // Recorded test steps...
-    }
-}
-```
-
-### Playwright-Style Export
-
-```csharp
-public class RecordingTests
-{
-    [Fact]
-    public async Task Test_Session()
-    {
-        // await page.Locator("#txtName").FillAsync("John Doe");
-        // await page.Locator("#btnSave").ClickAsync();
-        // await Expect(response).ToHaveStatusCodeAsync(200);
-    }
-}
-```
+See [docs/export-formats.md](docs/export-formats.md) for detailed format documentation.
 
 ## Event Types
 
 ### UI Events
 
-| Type | Description |
-|------|-------------|
-| `UIClick` | Button or control click |
-| `UIDoubleClick` | Double-click event |
-| `UITextInput` | Text entry in TextBox |
-| `UISelectionChange` | ComboBox/ListBox selection |
-| `UIToggle` | CheckBox/RadioButton change |
-| `UIKeyboardShortcut` | Keyboard shortcut pressed |
-| `UIWindowOpen` | Window opened |
-| `UIWindowClose` | Window closed |
+| Type | Description | Captured Data |
+|------|-------------|---------------|
+| `UIClick` | Button/control click | Control info, position |
+| `UIDoubleClick` | Double-click | Control info, position |
+| `UITextInput` | Text entry | Old/new value, binding path |
+| `UISelectionChange` | Selection changed | Selected item(s) |
+| `UIToggle` | Check/uncheck | Boolean state |
+| `UIKeyboardShortcut` | Key combination | Key + modifiers |
+| `UIWindowOpen/Close` | Window lifecycle | Window title, type |
 
 ### API Events
 
-| Type | Description |
-|------|-------------|
-| `ApiRequest` | HTTP request sent |
-| `ApiResponse` | HTTP response received |
+| Type | Description | Captured Data |
+|------|-------------|---------------|
+| `ApiRequest` | HTTP request sent | Method, URL, headers, body |
+| `ApiResponse` | HTTP response received | Status, headers, body, duration |
 
 ### ViewModel Events
 
-| Type | Description |
-|------|-------------|
-| `PropertyChange` | ViewModel property changed |
-| `Command` | Command executed |
-| `Navigation` | View navigation |
+| Type | Description | Captured Data |
+|------|-------------|---------------|
+| `PropertyChange` | Property changed | Property name, old/new value |
+| `Command` | Command executed | Command name, parameter |
 
 ## API Reference
 
-### WpfRecorder (Static Class)
+### WpfRecorder
 
 ```csharp
-// Properties
+// State
 bool IsRecording { get; }
 int EntryCount { get; }
 RecordingHub Hub { get; }
@@ -305,41 +305,49 @@ RecordingHub Hub { get; }
 event EventHandler<bool> RecordingStateChanged;
 event EventHandler<RecordEntry> EntryRecorded;
 
-// Methods
+// Control
 void Initialize();
-void Start(string? sessionName = null);
+void Start(string sessionName = null);
 void Stop();
 void Clear();
 void SaveToFile(string filePath);
+
+// HTTP
 HttpClient CreateHttpClient();
+RecordingHttpHandler CreateHttpHandler();
+
+// Manual recording
+void RecordClick(string controlType, string controlName, string text);
+void RecordTextInput(string controlType, string controlName, string oldValue, string newValue);
 ```
 
 ### RecordingBootstrapper
 
 ```csharp
-// Initialize recording for an application
+// Singleton
+RecordingBootstrapper.Instance
+
+// Initialize
 void Initialize(Application app);
 Task InitializeWithIpcAsync(Application app, string sessionId);
 
-// Create recording-enabled HttpClient
+// HTTP
 HttpClient CreateRecordingHttpClient();
 RecordingHttpHandler CreateRecordingHandler();
 
-// Control recording
+// Control
 void StartRecording(string sessionName = null);
 void StopRecording();
-void ClearRecording();
-void SaveRecording(string filePath);
-
-// Instrument views
 void InstrumentWindow(Window window);
 ```
 
 ### ExportService
 
 ```csharp
-// Export to various formats
-void Export(IEnumerable<RecordEntry> entries, string filePath, ExportFormat format);
+// Unified export
+void Export(entries, filePath, ExportFormat.MSTest, session);
+
+// Format-specific
 void ExportToJson(entries, filePath, session);
 void ExportToMSTest(entries, filePath, session);
 void ExportToNUnit(entries, filePath, session);
@@ -351,57 +359,36 @@ void ExportToExcel(entries, filePath);
 
 ## Requirements
 
-### Framework Solution (.NET Framework 4.7.2)
-- Visual Studio 2022 (17.0 or later)
-- .NET SDK 6.0 or later (for building)
-- .NET Framework 4.7.2 Developer Pack
-- Windows 10/11
-
-### Core Solution (.NET 8)
-- Visual Studio 2022 (17.8 or later) or VS Code
-- .NET SDK 8.0 or later
-- Windows 10/11
+| Solution | Requirements |
+|----------|--------------|
+| **Framework** | Visual Studio 2022 17.0+, .NET Framework 4.7.2, Windows 10/11 |
+| **Core** | .NET SDK 8.0+, Windows 10/11 |
 
 ## Building
 
-### Framework Solution
-
 ```bash
+# Framework Solution (VSIX)
 cd src/Framework
 dotnet restore
 dotnet build
-
-# Run tests
 dotnet test
 
-# Create VSIX package
-msbuild /t:Build /p:Configuration=Release WpfEventRecorder/WpfEventRecorder.csproj
-```
-
-### Core Solution
-
-```bash
+# Core Solution (Standalone)
 cd src/Core
 dotnet restore
 dotnet build
-
-# Run tests
 dotnet test
-
-# Run the app
 dotnet run --project WpfEventRecorder.App
 ```
 
 ## Sample Application
 
-The `WpfEventRecorder.SampleApp` project demonstrates a complete MVVM application with:
+The `WpfEventRecorder.SampleApp` demonstrates:
 
 - **CustomerViewModel**: Property recording with validation
 - **CustomerListViewModel**: Command recording with async operations
-- **CustomerService**: HTTP API calls with recording
+- **CustomerService**: HTTP API call recording
 - **Full MVVM Pattern**: ViewModelBase, RelayCommand, data binding
-
-Run the sample app to see recording in action:
 
 ```bash
 cd src/Framework
@@ -412,34 +399,52 @@ dotnet run --project WpfEventRecorder.SampleApp
 
 ### Named Pipe IPC
 
-The VSIX extension and target application communicate via Named Pipes:
-
-1. VSIX creates a `NamedPipeServer` with a unique session ID
-2. Target app connects via `NamedPipeClient` using the session ID
-3. Events are serialized as JSON and streamed in real-time
-4. Auto-reconnect on disconnect
+```
+┌─────────────────┐     Named Pipe     ┌─────────────────┐
+│  Target WPF     │ ─────────────────► │  VSIX Extension │
+│  Application    │   JSON Events      │  Tool Window    │
+│                 │                    │                 │
+│ NamedPipeClient │                    │ NamedPipeServer │
+└─────────────────┘                    └─────────────────┘
+```
 
 ### View Instrumentation
 
 The `ViewInstrumenter` walks the visual tree and attaches event handlers:
 
-- TextBox: LostFocus, TextChanged
-- ComboBox/ListBox: SelectionChanged
-- CheckBox/RadioButton: Checked/Unchecked
-- Button: Click
-- DatePicker: SelectedDateChanged
-- Slider: ValueChanged
-- DataGrid: SelectionChanged, CellEditEnding
-- TabControl: SelectionChanged
+| Control | Events Captured |
+|---------|-----------------|
+| TextBox | LostFocus, TextChanged |
+| ComboBox/ListBox | SelectionChanged |
+| CheckBox/RadioButton | Checked, Unchecked |
+| Button | Click |
+| DatePicker | SelectedDateChanged |
+| Slider | ValueChanged |
+| DataGrid | SelectionChanged, CellEditEnding |
+| TabControl | SelectionChanged |
+
+## Documentation
+
+- [Architecture](docs/Architecture.md) - System design and components
+- [API Reference](docs/APIReference.md) - Complete API documentation
+- [Developer Guide](docs/DeveloperGuide.md) - Contributing and extending
+- [User Manual](docs/UserManual.md) - End-user guide
+- [Export Formats](docs/export-formats.md) - Export format details
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add/update tests
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-MIT License - see [LICENSE.txt](LICENSE.txt) for details.
+This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) for details.
+
+## Acknowledgments
+
+- [Microsoft Visual Studio SDK](https://docs.microsoft.com/en-us/visualstudio/extensibility/)
+- [System.Reactive](https://github.com/dotnet/reactive)
+- [UI Automation](https://docs.microsoft.com/en-us/dotnet/framework/ui-automation/)
