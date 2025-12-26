@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
     <RootNamespace>WpfEventRecorder.Extension</RootNamespace>
     <AssemblyName>WpfEventRecorder.Extension</AssemblyName>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
@@ -27,6 +27,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WpfEventRecorder.Core\WpfEventRecorder.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 
   <ItemGroup>
